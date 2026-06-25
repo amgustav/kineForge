@@ -89,3 +89,12 @@ def weak_actuator_scale(
     if "weak_actuator" in active_failures:
         return float(failure_config["weak_actuator"]["scale"])
     return 1.0
+
+
+def action_noise_std(
+    failure_config: Mapping[str, Any],
+    active_failures: Collection[str],
+) -> float:
+    if "action_noise" in active_failures:
+        return float(failure_config["action_noise"]["std"])
+    return 0.0

@@ -1,0 +1,28 @@
+scenarios:
+  - name: baseline
+    failures: []
+    description: No injected evaluation failures.
+  - name: target_shift
+    failures: [moved_target]
+    description: Moves the target by the configured offset before each eval episode.
+  - name: low_friction
+    failures: [low_friction]
+    description: Placeholder for lower table/contact friction.
+    limitations:
+      - The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so low_friction is documented but not physically modeled yet.
+  - name: high_friction
+    failures: [high_friction]
+    description: Placeholder for higher table/contact friction.
+    limitations:
+      - The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so high_friction is documented but not physically modeled yet.
+  - name: observation_noise
+    failures: [noisy_observation]
+    description: Adds configured Gaussian noise to observations during eval.
+  - name: action_noise
+    failures: [action_noise]
+    description: Adds configured Gaussian perturbation to policy actions during eval.
+  - name: combined_hard
+    failures: [moved_target, noisy_observation, action_noise, weak_actuator]
+    description: Combines target shift, observation noise, action noise, and weak actuator effects.
+    limitations:
+      - Excludes low_friction and high_friction because friction is not physically modeled in v0.

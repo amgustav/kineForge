@@ -49,7 +49,25 @@ Stress-test it with failure modes:
 python eval.py --policy runs/latest/policy.zip --failures moved_target,noisy_observation,weak_actuator --seed 1
 ```
 
-Current status: v0.1.0 established the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecard, and trajectory PNG. v0.2.0 adds timestamped runs, explicit seeds, metadata, config snapshots, richer scorecards, and extra PNG plots.
+Run the default eval matrix. This evaluates the same policy in `baseline`, `target_shift`, `low_friction`, `high_friction`, `observation_noise`, `action_noise`, and `combined_hard` scenarios:
+
+```bash
+python eval_matrix.py --policy runs/latest/policy.zip --seed 1
+```
+
+Run a custom named eval matrix:
+
+```bash
+python eval_matrix.py --policy runs/latest/policy.zip --scenario baseline= --scenario target_shift=moved_target --scenario observation_noise=noisy_observation --scenario action_noise=action_noise --scenario combined_hard=moved_target,noisy_observation,action_noise,weak_actuator --seed 1
+```
+
+Compare two eval matrix summaries:
+
+```bash
+python compare_eval.py --before runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --after runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --output runs/matrix_comparison.json
+```
+
+Current status: kineForge has the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecards, trajectory PNGs, timestamped runs, explicit seeds, metadata, config snapshots, eval matrices, replay indexes, and matrix summary comparison.
 
 Outputs:
 
@@ -67,6 +85,26 @@ runs/
     trajectory.png
     distance_over_time.png
     episode_rewards.png
+  eval-matrix-YYYYMMDD-HHMMSS/
+    policy.zip
+    train_metadata.json        # present when the evaluated policy came from a kineForge train run
+    matrix_summary.json
+    replay_index.json
+    scenarios/
+      baseline/
+        scorecard.json
+        eval_metadata.json
+        config_snapshot.yaml
+        trajectory.png
+        distance_over_time.png
+        episode_rewards.png
+      combined_hard/
+        scorecard.json
+        eval_metadata.json
+        config_snapshot.yaml
+        trajectory.png
+        distance_over_time.png
+        episode_rewards.png
   latest/
     policy.zip
     scorecard.json
@@ -89,10 +127,10 @@ runs/
 | **Training**        | PPO from scratch via Stable-Baselines3                       |
 | **Environment API** | Gymnasium                                                    |
 | **Configs**         | YAML robot, task, reward, randomization, and failure configs |
-| **Failure modes**   | moved target, noisy observation, weak actuator               |
-| **Eval output**     | JSON scorecard and eval metadata                             |
+| **Failure modes**   | moved target, noisy observation, action noise, weak actuator; low/high friction are documented matrix placeholders |
+| **Eval output**     | JSON scorecards, matrix summaries, replay indexes, and eval metadata |
 | **Replay output**   | matplotlib trajectory, distance, and reward PNGs             |
-| **Tests**           | smoke tests for env behavior, configs, scorecards, and plots |
+| **Tests**           | smoke tests for env behavior, configs, scorecards, matrices, and plots |
 
 A short `1000` timestep run is a smoke test. It proves the pipeline works; the `25000` timestep command is the recommended local run expected to pass normal no-failure eval.
 
@@ -108,7 +146,7 @@ Evaluation writes a machine-readable scorecard with:
 * `per_episode`: seed, success, timeout, final distance, episode reward, step count, target/final positions, and active failures for each episode.
 * `failure_modes`: sorted failure modes active during evaluation.
 * `artifacts`: paths to the policy snapshot, scorecard, metadata, config snapshot, and PNG plots.
-* `collision_rate_explanation`: v0.2.0 does not implement collision detection, so `collision_rate` is fixed at `0.0` and is not a safety metric.
+* `collision_rate_explanation`: v0 does not implement collision detection, so `collision_rate` is fixed at `0.0` and is not a safety metric.
 
 The eval gate separates two different things:
 
@@ -119,6 +157,32 @@ A failed gate after short training means the policy did not pass yet, not that t
 
 ---
 
+## Eval matrix
+
+`eval_matrix.py` runs one policy snapshot across multiple named scenarios. Each scenario uses the same robot, task, reward config, seed, and episode count, with only the scenario failure set changing.
+
+Scenario syntax is `name=failure_a,failure_b`. Use `name=` for a no-failure scenario. If no scenarios are provided, the default matrix runs:
+
+* `baseline=` — no injected failures.
+* `target_shift=moved_target` — moved target offset.
+* `low_friction=low_friction` — documented limitation; not physically modeled in v0.
+* `high_friction=high_friction` — documented limitation; not physically modeled in v0.
+* `observation_noise=noisy_observation` — Gaussian observation noise.
+* `action_noise=action_noise` — Gaussian action perturbation.
+* `combined_hard=moved_target,noisy_observation,action_noise,weak_actuator` — combined compatible stressors. It intentionally excludes friction placeholders until friction is physically modeled.
+
+Each matrix run writes:
+
+* one scenario directory per scenario under `scenarios/<name>/`;
+* one `scorecard.json` per scenario;
+* one aggregate `matrix_summary.json`;
+* one `replay_index.json` mapping scenario names to replay PNG artifacts that were written.
+
+`compare_eval.py` compares two `matrix_summary.json` files and reports aggregate and per-scenario metric deltas.
+
+---
+
+
 ## How it works
 
 `TabletopReachEnv` wraps a simple MuJoCo arm as a Gymnasium environment.
@@ -127,7 +191,7 @@ Observations include joint state, end-effector position, target position, and th
 
 Training is handled by `train.py` using Stable-Baselines3 PPO.
 
-Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot.
+Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot. Eval matrices are handled by `eval_matrix.py`; summary comparison is handled by `compare_eval.py`.
 
 Reward terms are loaded from YAML and include distance-to-target, progress shaping, success bonus, control penalty, and timeout penalty.
 
@@ -146,7 +210,9 @@ kineforge/
   envs/tabletop_reach_env.py
   config.py
   evals.py
+  eval_artifacts.py
   randomization.py
+  matrix.py
   replay.py
   reports.py
   rewards.py
@@ -156,6 +222,8 @@ tests/
 
 train.py
 eval.py
+eval_matrix.py
+compare_eval.py
 ```
 
 ---
@@ -177,7 +245,7 @@ eval.py
 Next experiment-quality steps:
 
 * config sweep runner
-* run comparison helpers
+* configurable matrix presets
 * stricter eval gates
 * real collision/contact metrics
 * optional video replay

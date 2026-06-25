@@ -4,3 +4,11 @@ noisy_observation:
   std: 0.03
 weak_actuator:
   scale: 0.5
+action_noise:
+  std: 0.08
+low_friction:
+  modeled: false
+  limitation: "The current kinematic tabletop reach task has no contact-dependent object dynamics, so low_friction is documented but not physically modeled yet."
+high_friction:
+  modeled: false
+  limitation: "The current kinematic tabletop reach task has no contact-dependent object dynamics, so high_friction is documented but not physically modeled yet."

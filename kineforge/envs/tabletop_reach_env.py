@@ -8,6 +8,7 @@ import mujoco
 import numpy as np
 
 from kineforge.randomization import (
+    action_noise_std,
     apply_moved_target,
     observation_noise_std,
     sample_actuator_scale,
@@ -140,6 +141,13 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
 
     def step(self, action: np.ndarray):
         clipped_action = np.clip(np.asarray(action, dtype=np.float64), -1.0, 1.0)
+        std = action_noise_std(self.failure_config, self.active_failures)
+        if std > 0.0:
+            clipped_action = np.clip(
+                clipped_action + self.np_random.normal(0.0, std, size=clipped_action.shape),
+                -1.0,
+                1.0,
+            )
         failure_scale = weak_actuator_scale(self.failure_config, self.active_failures)
         joint_delta_scale = float(self.task_config["control"]["joint_delta_scale"])
         joint_min, joint_max = self.robot_config["joint_limit"]
