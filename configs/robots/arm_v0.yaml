@@ -1,0 +1,7 @@
+name: arm_v0
+dof: 2
+link_lengths: [0.35, 0.25]
+joint_limit: [-3.141592653589793, 3.141592653589793]
+control_limit: 1.0
+gear: 1.0
+base_height: 0.04

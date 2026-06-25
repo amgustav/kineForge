@@ -1,0 +1,6 @@
+moved_target:
+  offset: [0.08, -0.05, 0.0]
+noisy_observation:
+  std: 0.03
+weak_actuator:
+  scale: 0.5
