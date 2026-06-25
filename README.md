@@ -168,4 +168,4 @@ Built with MuJoCo, Gymnasium, Stable-Baselines3, NumPy, PyYAML, matplotlib, and 
 
 ## License
 
-MIT licensed.
+MIT
