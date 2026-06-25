@@ -60,6 +60,7 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
         self.actuator_scale = 1.0
         self._last_reward_terms = {
             "distance": 0.0,
+            "progress": 0.0,
             "success_bonus": 0.0,
             "action_penalty": 0.0,
             "timeout_penalty": 0.0,
@@ -124,8 +125,10 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
         self.trajectory = [end_effector.copy()]
         distance = float(np.linalg.norm(end_effector - self.target_position))
         success = distance < float(self.task_config["success_threshold"])
+        self.previous_distance = distance
         self._last_reward_terms = {
             "distance": 0.0,
+            "progress": 0.0,
             "success_bonus": 0.0,
             "action_penalty": 0.0,
             "timeout_penalty": 0.0,
@@ -134,12 +137,25 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
 
     def step(self, action: np.ndarray):
         clipped_action = np.clip(np.asarray(action, dtype=np.float64), -1.0, 1.0)
-        control_limit = float(self.robot_config["control_limit"])
         failure_scale = weak_actuator_scale(self.failure_config, self.active_failures)
-        self.data.ctrl[:] = clipped_action * self.actuator_scale * failure_scale * control_limit
-
-        for _ in range(int(self.task_config["simulation"]["frame_skip"])):
-            mujoco.mj_step(self.model, self.data)
+        joint_delta_scale = float(self.task_config["control"]["joint_delta_scale"])
+        joint_min, joint_max = self.robot_config["joint_limit"]
+        previous_qpos = self.data.qpos[:2].copy()
+        new_qpos = np.clip(
+            previous_qpos + clipped_action * self.actuator_scale * failure_scale * joint_delta_scale,
+            float(joint_min),
+            float(joint_max),
+        )
+        self.data.qpos[:2] = new_qpos
+        dt = float(self.task_config["simulation"]["timestep"]) * int(self.task_config["simulation"]["frame_skip"])
+        self.data.qvel[:2] = (new_qpos - previous_qpos) / dt
+        self.data.ctrl[:] = (
+            clipped_action
+            * self.actuator_scale
+            * failure_scale
+            * float(self.robot_config["control_limit"])
+        )
+        mujoco.mj_forward(self.model, self.data)
 
         self.step_count += 1
         end_effector = self._end_effector_position()
@@ -150,11 +166,13 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
         truncated = bool(timeout and not success)
         reward, reward_terms = compute_reach_reward(
             distance,
+            self.previous_distance,
             success,
             clipped_action,
             timeout,
             self.reward_config,
         )
+        self.previous_distance = distance
         self._last_reward_terms = reward_terms
         self.trajectory.append(end_effector.copy())
         return (

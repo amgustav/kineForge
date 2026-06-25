@@ -28,6 +28,7 @@ def main() -> None:
         args.reward,
         "basic_failures",
     )
+    ppo_config = dict(task_config["training"]["ppo"])
     run_timestamp = timestamp()
     train_dir = prepare_run_dir("train")
     latest_dir = reset_latest_dir()
@@ -46,9 +47,7 @@ def main() -> None:
         env,
         verbose=1,
         seed=args.seed,
-        n_steps=64,
-        batch_size=64,
-        n_epochs=4,
+        **ppo_config,
     )
     model.learn(total_timesteps=args.timesteps)
 
@@ -78,6 +77,8 @@ def main() -> None:
                 "reward": args.reward,
                 "timesteps": args.timesteps,
                 "seed": args.seed,
+                "ppo": ppo_config,
+                "recommended_timesteps": task_config["training"]["recommended_timesteps"],
                 "policy_path": str(policy_path),
                 "timestamped_run_dir": str(train_dir),
                 "timestamp": run_timestamp,

@@ -1,20 +1,33 @@
 name: tabletop_reach
 robot: arm_v0
 reward: reach_v0
-max_episode_steps: 100
+max_episode_steps: 75
 success_threshold: 0.05
 simulation:
   timestep: 0.02
   frame_skip: 5
 target:
   default_position: [0.45, 0.0, 0.04]
+control:
+  joint_delta_scale: 0.08
 randomization:
   target_position:
-    x: [0.25, 0.55]
-    y: [-0.25, 0.25]
+    x: [0.35, 0.50]
+    y: [-0.15, 0.15]
     z: [0.04, 0.04]
   initial_qpos:
-    shoulder: [-0.2, 0.2]
-    elbow: [-0.2, 0.2]
+    shoulder: [-0.1, 0.1]
+    elbow: [-0.1, 0.1]
   observation_noise_std: 0.0
   actuator_scale: [0.9, 1.1]
+training:
+  recommended_timesteps: 25000
+  ppo:
+    n_steps: 256
+    batch_size: 64
+    n_epochs: 8
+    learning_rate: 0.0003
+    gamma: 0.95
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.0

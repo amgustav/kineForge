@@ -25,13 +25,25 @@ pip install -e .
 python -m pytest tests/test_env_smoke.py -q
 ```
 
-Train a policy:
+Train a smoke-test policy:
 
 ```bash
 python train.py --task tabletop_reach --robot arm_v0 --timesteps 1000
 ```
 
-Evaluate it with failure modes:
+Train the recommended local learning run:
+
+```bash
+python train.py --task tabletop_reach --robot arm_v0 --timesteps 25000
+```
+
+Evaluate the normal no-failure gate:
+
+```bash
+python eval.py --policy runs/latest/policy.zip
+```
+
+Stress-test it with failure modes:
 
 ```bash
 python eval.py --policy runs/latest/policy.zip --failures moved_target,noisy_observation,weak_actuator
@@ -61,7 +73,7 @@ runs/latest/trajectory.png
 | **Replay output**   | matplotlib trajectory PNG                                    |
 | **Tests**           | basic smoke tests for env reset/step and config loading      |
 
-A short `1000` timestep run is a smoke test. It proves the pipeline works; it is not expected to produce a strong policy.
+A short `1000` timestep run is a smoke test. It proves the pipeline works; the `25000` timestep command is the recommended local run expected to pass normal no-failure eval.
 
 ---
 
@@ -71,12 +83,20 @@ Evaluation writes a machine-readable scorecard:
 
 ```json
 {
-  "success_rate": 0.0,
-  "mean_final_distance": 0.068,
-  "timeout_rate": 1.0,
+  "success_rate": 0.9,
+  "mean_final_distance": 0.041,
+  "timeout_rate": 0.1,
   "collision_rate": 0.0,
-  "mean_episode_reward": -8.42,
-  "gate": "FAIL"
+  "mean_episode_reward": 3.72,
+  "gate": {
+    "status": "PASS",
+    "criteria": {
+      "success_rate >= 0.80": true,
+      "mean_final_distance <= 0.05": true,
+      "timeout_rate <= 0.30": true
+    },
+    "failed_criteria": []
+  }
 }
 ```
 
@@ -99,7 +119,7 @@ Training is handled by `train.py` using Stable-Baselines3 PPO.
 
 Evaluation is handled by `eval.py`, which can inject configured failures before writing a scorecard and replay image.
 
-Reward terms are loaded from YAML and include distance-to-target, success bonus, control penalty, and timeout penalty.
+Reward terms are loaded from YAML and include distance-to-target, progress shaping, success bonus, control penalty, and timeout penalty.
 
 ---
 

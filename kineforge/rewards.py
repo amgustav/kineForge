@@ -7,14 +7,17 @@ import numpy as np
 
 def compute_reach_reward(
     distance: float,
+    previous_distance: float,
     success: bool,
     action: np.ndarray,
     timeout: bool,
     reward_config: Mapping[str, Any],
 ) -> tuple[float, dict[str, float]]:
     weights = reward_config["weights"]
+    progress = float(previous_distance) - float(distance)
     terms = {
         "distance": -float(weights["distance"]) * float(distance),
+        "progress": float(weights.get("progress", 0.0)) * progress,
         "success_bonus": float(weights["success_bonus"]) if success else 0.0,
         "action_penalty": -float(weights["action_penalty"]) * float(np.square(action).sum()),
         "timeout_penalty": -float(weights["timeout_penalty"]) if timeout and not success else 0.0,
