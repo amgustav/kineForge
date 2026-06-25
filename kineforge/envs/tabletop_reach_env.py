@@ -54,6 +54,9 @@ class TabletopReachEnv(gym.Env[np.ndarray, np.ndarray]):
             shape=(13,),
             dtype=np.float32,
         )
+        if seed is not None:
+            self.action_space.seed(seed)
+            self.observation_space.seed(seed)
         self.step_count = 0
         self.trajectory: list[np.ndarray] = []
         self.target_position = np.asarray(self.task_config["target"]["default_position"], dtype=np.float64)

@@ -5,9 +5,16 @@ from pathlib import Path
 
 from stable_baselines3 import PPO
 
-from kineforge.config import load_env_configs, write_config_snapshot
+from kineforge.config import config_path, load_env_configs, project_root
 from kineforge.envs import TabletopReachEnv
-from kineforge.reports import prepare_run_dir, reset_latest_dir, timestamp, write_json
+from kineforge.reports import (
+    package_versions,
+    prepare_run_dir,
+    reset_latest_dir,
+    timestamp,
+    write_config_snapshot,
+    write_json,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,8 +37,7 @@ def main() -> None:
     )
     ppo_config = dict(task_config["training"]["ppo"])
     run_timestamp = timestamp()
-    train_dir = prepare_run_dir("train")
-    latest_dir = reset_latest_dir()
+    train_dir = prepare_run_dir("train", run_timestamp)
 
     env = TabletopReachEnv(
         robot_config,
@@ -52,38 +58,57 @@ def main() -> None:
     model.learn(total_timesteps=args.timesteps)
 
     timestamped_policy = train_dir / "policy.zip"
-    latest_policy = latest_dir / "policy.zip"
     model.save(str(timestamped_policy))
-    model.save(str(latest_policy))
 
     configs = {
         "robot": robot_config,
         "task": task_config,
         "reward": reward_config,
         "failures": failure_config,
+        "ppo": ppo_config,
     }
-    write_config_snapshot(train_dir, configs)
-    write_config_snapshot(latest_dir, configs)
+    timestamped_config_snapshot = write_config_snapshot(train_dir, configs)
 
-    for metadata_path, policy_path in (
-        (train_dir / "training_metadata.json", timestamped_policy),
-        (latest_dir / "training_metadata.json", latest_policy),
-    ):
-        write_json(
-            metadata_path,
-            {
-                "task": args.task,
-                "robot": args.robot,
-                "reward": args.reward,
-                "timesteps": args.timesteps,
-                "seed": args.seed,
-                "ppo": ppo_config,
-                "recommended_timesteps": task_config["training"]["recommended_timesteps"],
-                "policy_path": str(policy_path),
-                "timestamped_run_dir": str(train_dir),
-                "timestamp": run_timestamp,
-            },
-        )
+    root = project_root()
+    config_paths = {
+        "robot": str(config_path("robots", args.robot).relative_to(root)),
+        "task": str(config_path("tasks", args.task).relative_to(root)),
+        "reward": str(config_path("rewards", args.reward).relative_to(root)),
+        "failures": str(config_path("failures", "basic_failures").relative_to(root)),
+    }
+    base_metadata = {
+        "timestamp": run_timestamp,
+        "task": args.task,
+        "robot": args.robot,
+        "reward": args.reward,
+        "seed": args.seed,
+        "timesteps": args.timesteps,
+        "recommended_timesteps": task_config["training"]["recommended_timesteps"],
+        "ppo_hyperparameters": ppo_config,
+        "config_paths": config_paths,
+        "versions": package_versions(),
+    }
+    write_json(
+        train_dir / "train_metadata.json",
+        {
+            **base_metadata,
+            "policy_path": str(timestamped_policy),
+            "config_snapshot_path": str(timestamped_config_snapshot),
+        },
+    )
+
+    latest_dir = reset_latest_dir()
+    latest_policy = latest_dir / "policy.zip"
+    model.save(str(latest_policy))
+    latest_config_snapshot = write_config_snapshot(latest_dir, configs)
+    write_json(
+        latest_dir / "train_metadata.json",
+        {
+            **base_metadata,
+            "policy_path": str(latest_policy),
+            "config_snapshot_path": str(latest_config_snapshot),
+        },
+    )
 
     env.close()
     print(f"Timestamped policy: {timestamped_policy}")

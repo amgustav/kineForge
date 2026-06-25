@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import yaml
 
@@ -37,7 +37,3 @@ def load_env_configs(
     )
 
 
-def write_config_snapshot(output_dir: Path, configs: Mapping[str, Any]) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    with (output_dir / "config_snapshot.yaml").open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(dict(configs), handle, sort_keys=True)

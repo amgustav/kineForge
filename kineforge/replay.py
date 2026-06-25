@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib
@@ -32,6 +33,46 @@ def save_trajectory_png(
     axis.grid(True)
     axis.legend()
     axis.set_title(f"kineForge replay: {'SUCCESS' if success else 'FAILURE'}")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+def save_distance_over_time_png(
+    distances: Sequence[float],
+    success_threshold: float,
+    output_path: Path,
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, axis = plt.subplots(figsize=(7, 4))
+    axis.plot(range(len(distances)), distances, marker="o", label="distance")
+    axis.axhline(
+        float(success_threshold),
+        color="tab:green",
+        linestyle="--",
+        label="success threshold",
+    )
+    axis.set_xlabel("step")
+    axis.set_ylabel("distance to target (m)")
+    axis.grid(True)
+    axis.legend()
+    axis.set_title("kineForge distance over time")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
+def save_episode_rewards_png(
+    episode_rewards: Sequence[float],
+    output_path: Path,
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, axis = plt.subplots(figsize=(7, 4))
+    axis.plot(range(len(episode_rewards)), episode_rewards, marker="o")
+    axis.set_xlabel("episode")
+    axis.set_ylabel("total episode reward")
+    axis.grid(True)
+    axis.set_title("kineForge episode rewards")
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
     plt.close(fig)

@@ -2,9 +2,9 @@
 
 **Train, stress-test, and evaluate robot policies in simulation.**
 
-kineForge is an open-source RL-first embodied AI testbed. The current version trains a small MuJoCo robot arm with PPO, evaluates it under configurable failure modes, and writes a JSON scorecard plus trajectory replay.
+kineForge is an open-source RL-first embodied AI testbed. It trains a small MuJoCo robot arm with PPO, evaluates it under configurable failure modes, and writes reproducible local run artifacts.
 
-The repo is intentionally small: one robot, one task, one reward config, one training loop, one eval gate, one replay output.
+The repo is intentionally small: one robot, one task, one reward config, one training loop, one eval gate, JSON reports, and matplotlib PNG replay/diagnostic plots.
 
 ```text
 robot → task → reward → train → failures → eval → scorecard → replay
@@ -28,33 +28,54 @@ python -m pytest tests/test_env_smoke.py -q
 Train a smoke-test policy:
 
 ```bash
-python train.py --task tabletop_reach --robot arm_v0 --timesteps 1000
+python train.py --task tabletop_reach --robot arm_v0 --timesteps 1000 --seed 1
 ```
 
 Train the recommended local learning run:
 
 ```bash
-python train.py --task tabletop_reach --robot arm_v0 --timesteps 25000
+python train.py --task tabletop_reach --robot arm_v0 --timesteps 25000 --seed 1
 ```
 
 Evaluate the normal no-failure gate:
 
 ```bash
-python eval.py --policy runs/latest/policy.zip
+python eval.py --policy runs/latest/policy.zip --seed 1
 ```
 
 Stress-test it with failure modes:
 
 ```bash
-python eval.py --policy runs/latest/policy.zip --failures moved_target,noisy_observation,weak_actuator
+python eval.py --policy runs/latest/policy.zip --failures moved_target,noisy_observation,weak_actuator --seed 1
 ```
+
+Current status: v0.1.0 established the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecard, and trajectory PNG. v0.2.0 adds timestamped runs, explicit seeds, metadata, config snapshots, richer scorecards, and extra PNG plots.
 
 Outputs:
 
 ```text
-runs/latest/policy.zip
-runs/latest/scorecard.json
-runs/latest/trajectory.png
+runs/
+  train-YYYYMMDD-HHMMSS/
+    policy.zip
+    train_metadata.json
+    config_snapshot.yaml
+  eval-YYYYMMDD-HHMMSS/
+    policy.zip
+    scorecard.json
+    eval_metadata.json
+    config_snapshot.yaml
+    trajectory.png
+    distance_over_time.png
+    episode_rewards.png
+  latest/
+    policy.zip
+    scorecard.json
+    train_metadata.json        # present when the evaluated policy came from a kineForge train run
+    eval_metadata.json
+    config_snapshot.yaml
+    trajectory.png
+    distance_over_time.png
+    episode_rewards.png
 ```
 
 ---
@@ -69,9 +90,9 @@ runs/latest/trajectory.png
 | **Environment API** | Gymnasium                                                    |
 | **Configs**         | YAML robot, task, reward, randomization, and failure configs |
 | **Failure modes**   | moved target, noisy observation, weak actuator               |
-| **Eval output**     | JSON scorecard                                               |
-| **Replay output**   | matplotlib trajectory PNG                                    |
-| **Tests**           | basic smoke tests for env reset/step and config loading      |
+| **Eval output**     | JSON scorecard and eval metadata                             |
+| **Replay output**   | matplotlib trajectory, distance, and reward PNGs             |
+| **Tests**           | smoke tests for env behavior, configs, scorecards, and plots |
 
 A short `1000` timestep run is a smoke test. It proves the pipeline works; the `25000` timestep command is the recommended local run expected to pass normal no-failure eval.
 
@@ -79,26 +100,15 @@ A short `1000` timestep run is a smoke test. It proves the pipeline works; the `
 
 ## Scorecard
 
-Evaluation writes a machine-readable scorecard:
+Evaluation writes a machine-readable scorecard with:
 
-```json
-{
-  "success_rate": 0.9,
-  "mean_final_distance": 0.041,
-  "timeout_rate": 0.1,
-  "collision_rate": 0.0,
-  "mean_episode_reward": 3.72,
-  "gate": {
-    "status": "PASS",
-    "criteria": {
-      "success_rate >= 0.80": true,
-      "mean_final_distance <= 0.05": true,
-      "timeout_rate <= 0.30": true
-    },
-    "failed_criteria": []
-  }
-}
-```
+* `summary`: success rate, mean final distance, timeout rate, mean episode reward, and collision rate.
+* `gate.status`: `PASS` only when all gate criteria pass.
+* `gate.thresholds`: min success rate, max mean final distance, and max timeout rate.
+* `per_episode`: seed, success, timeout, final distance, episode reward, step count, target/final positions, and active failures for each episode.
+* `failure_modes`: sorted failure modes active during evaluation.
+* `artifacts`: paths to the policy snapshot, scorecard, metadata, config snapshot, and PNG plots.
+* `collision_rate_explanation`: v0.2.0 does not implement collision detection, so `collision_rate` is fixed at `0.0` and is not a safety metric.
 
 The eval gate separates two different things:
 
@@ -117,7 +127,7 @@ Observations include joint state, end-effector position, target position, and th
 
 Training is handled by `train.py` using Stable-Baselines3 PPO.
 
-Evaluation is handled by `eval.py`, which can inject configured failures before writing a scorecard and replay image.
+Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot.
 
 Reward terms are loaded from YAML and include distance-to-target, progress shaping, success bonus, control penalty, and timeout penalty.
 
@@ -152,33 +162,25 @@ eval.py
 
 ## Current limitations
 
-kineForge is early.
-
-Current limits:
-
 * one simple robot arm
 * one tabletop reaching task
-* basic reward shaping
 * basic failure injection
-* basic trajectory replay
+* no collision detection
 * no real robot deployment
-* no benchmark result yet
-* no web UI or cloud backend
+* PNG plots only
+* no web, cloud, database, or backend
 
 ---
 
 ## Roadmap
 
-Next useful steps:
+Next experiment-quality steps:
 
-* make the reach policy learn reliably with better defaults
-* add longer training recipes
-* improve reward configs
-* add experiment sweeps across reward and failure settings
-* improve replay plots
-* add more robot variants
-* add more tasks
-* add stricter eval gates
+* config sweep runner
+* run comparison helpers
+* stricter eval gates
+* real collision/contact metrics
+* optional video replay
 
 ---
 
