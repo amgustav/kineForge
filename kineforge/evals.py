@@ -11,6 +11,78 @@ from kineforge.config import load_env_configs
 from kineforge.envs import TabletopReachEnv
 
 
+def build_scorecard(
+    policy_path: Path,
+    robot: str,
+    task: str,
+    reward: str,
+    seed: int,
+    failure_modes: Collection[str],
+    episode_results: list[dict[str, Any]],
+    success_threshold: float,
+) -> dict[str, Any]:
+    success_rate = float(np.mean([bool(result["success"]) for result in episode_results]))
+    mean_final_distance = float(np.mean([float(result["final_distance"]) for result in episode_results]))
+    timeout_rate = float(np.mean([bool(result["timeout"]) for result in episode_results]))
+    mean_episode_reward = float(np.mean([float(result["episode_reward"]) for result in episode_results]))
+    collision_rate = 0.0
+
+    thresholds = {
+        "min_success_rate": 0.8,
+        "max_mean_final_distance": float(success_threshold),
+        "max_timeout_rate": 0.3,
+    }
+    criteria = {
+        "success_rate": {
+            "operator": ">=",
+            "threshold": thresholds["min_success_rate"],
+            "value": success_rate,
+            "passed": bool(success_rate >= thresholds["min_success_rate"]),
+        },
+        "mean_final_distance": {
+            "operator": "<=",
+            "threshold": thresholds["max_mean_final_distance"],
+            "value": mean_final_distance,
+            "passed": bool(mean_final_distance <= thresholds["max_mean_final_distance"]),
+        },
+        "timeout_rate": {
+            "operator": "<=",
+            "threshold": thresholds["max_timeout_rate"],
+            "value": timeout_rate,
+            "passed": bool(timeout_rate <= thresholds["max_timeout_rate"]),
+        },
+    }
+    failed_criteria = [name for name, criterion in criteria.items() if not criterion["passed"]]
+
+    return {
+        "policy_path": str(policy_path),
+        "task": task,
+        "robot": robot,
+        "reward": reward,
+        "seed": int(seed),
+        "episodes": len(episode_results),
+        "failure_modes": sorted(failure_modes),
+        "summary": {
+            "success_rate": success_rate,
+            "mean_final_distance": mean_final_distance,
+            "timeout_rate": timeout_rate,
+            "mean_episode_reward": mean_episode_reward,
+            "collision_rate": collision_rate,
+        },
+        "gate": {
+            "status": "PASS" if not failed_criteria else "FAIL",
+            "thresholds": thresholds,
+            "criteria": criteria,
+            "failed_criteria": failed_criteria,
+        },
+        "per_episode": episode_results,
+        "collision_rate_explanation": (
+            "Collision detection is not implemented in v0.2.0; collision_rate is reported as 0.0 "
+            "and should not be interpreted as a safety metric."
+        ),
+    }
+
+
 def run_evaluation(
     policy_path: Path,
     robot: str,
@@ -30,6 +102,7 @@ def run_evaluation(
         "basic_failures",
     )
     active_failures = set(failures)
+    success_threshold = float(task_config["success_threshold"])
     env = TabletopReachEnv(
         robot_config,
         task_config,
@@ -41,14 +114,14 @@ def run_evaluation(
     )
     model = PPO.load(str(policy_path), env=env)
 
-    successes: list[bool] = []
-    final_distances: list[float] = []
-    timeouts: list[bool] = []
+    episode_results: list[dict[str, Any]] = []
     episode_rewards: list[float] = []
-    replay_payload: dict[str, Any] | None = None
+    first_episode_replay: dict[str, Any] | None = None
 
     for episode_index in range(episodes):
-        obs, info = env.reset(seed=seed + episode_index)
+        episode_seed = seed + episode_index
+        obs, info = env.reset(seed=episode_seed)
+        distance_history = [float(info["distance"])]
         terminated = False
         truncated = False
         total_reward = 0.0
@@ -58,57 +131,53 @@ def run_evaluation(
             action, _ = model.predict(obs, deterministic=True)
             obs, reward_value, terminated, truncated, final_info = env.step(action)
             total_reward += float(reward_value)
+            distance_history.append(float(final_info["distance"]))
 
         success = bool(final_info["success"])
         timeout = bool(final_info["timeout"])
         final_distance = float(final_info["distance"])
-        successes.append(success)
-        timeouts.append(timeout)
-        final_distances.append(final_distance)
-        episode_rewards.append(total_reward)
+        episode_reward = float(total_reward)
+        episode_rewards.append(episode_reward)
 
-        if replay_payload is None:
-            trajectory = np.asarray(env.trajectory, dtype=np.float64)
-            replay_payload = {
-                "trajectory": trajectory,
-                "target_position": np.asarray(final_info["target_position"], dtype=np.float64),
-                "final_position": trajectory[-1].copy(),
+        episode_results.append(
+            {
+                "episode": int(episode_index),
+                "seed": int(episode_seed),
                 "success": success,
+                "timeout": timeout,
+                "final_distance": final_distance,
+                "episode_reward": episode_reward,
+                "steps": int(env.step_count),
+                "target_position": np.asarray(final_info["target_position"], dtype=np.float64).tolist(),
+                "final_position": np.asarray(final_info["end_effector_position"], dtype=np.float64).tolist(),
+                "active_failures": list(final_info["active_failures"]),
+            }
+        )
+
+        if first_episode_replay is None:
+            first_episode_replay = {
+                "trajectory": np.asarray(env.trajectory, dtype=np.float64),
+                "target_position": np.asarray(final_info["target_position"], dtype=np.float64),
+                "final_position": np.asarray(final_info["end_effector_position"], dtype=np.float64),
+                "success": success,
+                "distance_history": distance_history,
             }
 
-    success_rate = float(np.mean(successes))
-    mean_final_distance = float(np.mean(final_distances))
-    timeout_rate = float(np.mean(timeouts))
-    mean_episode_reward = float(np.mean(episode_rewards))
-
-    criteria = {
-        "success_rate >= 0.80": bool(success_rate >= 0.80),
-        f"mean_final_distance <= {task_config['success_threshold']}": bool(
-            mean_final_distance <= float(task_config["success_threshold"])
-        ),
-        "timeout_rate <= 0.30": bool(timeout_rate <= 0.30),
-    }
-    failed_criteria = [name for name, passed in criteria.items() if not passed]
-
-    scorecard = {
-        "policy_path": str(policy_path),
-        "task": task,
-        "robot": robot,
-        "reward": reward,
-        "failures": sorted(active_failures),
-        "episodes": int(episodes),
-        "success_rate": success_rate,
-        "mean_final_distance": mean_final_distance,
-        "timeout_rate": timeout_rate,
-        "mean_episode_reward": mean_episode_reward,
-        "collision_rate": 0.0,
-        "collision_note": "Collision detection is not implemented in v0; collision_rate is fixed at 0.0.",
-        "gate": {
-            "status": "PASS" if not failed_criteria else "FAIL",
-            "criteria": criteria,
-            "failed_criteria": failed_criteria,
-        },
-    }
+    scorecard = build_scorecard(
+        policy_path=policy_path,
+        robot=robot,
+        task=task,
+        reward=reward,
+        seed=seed,
+        failure_modes=active_failures,
+        episode_results=episode_results,
+        success_threshold=success_threshold,
+    )
     env.close()
-    assert replay_payload is not None
+    assert first_episode_replay is not None
+    replay_payload = {
+        **first_episode_replay,
+        "episode_rewards": episode_rewards,
+        "success_threshold": success_threshold,
+    }
     return scorecard, replay_payload
