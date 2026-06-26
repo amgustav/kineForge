@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import csv
 import json
+from html import escape
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -154,6 +156,150 @@ def build_replay_index(scenario_results: Mapping[str, Mapping[str, Any]]) -> dic
         if replay_artifacts:
             scenarios[name] = replay_artifacts
     return {"scenarios": scenarios}
+
+
+def _overall_gate(summary: Mapping[str, Any]) -> str:
+    return "PASS" if int(summary["gate"]["fail_count"]) == 0 else "FAIL"
+
+
+def _run_id(summary: Mapping[str, Any]) -> str:
+    return f"eval-matrix-{summary['timestamp']}"
+
+
+def _scenario_metric(scenario: Mapping[str, Any], metric: str) -> Any:
+    return scenario["summary"].get(metric, "n/a")
+
+
+def _scenario_limitations(scenario: Mapping[str, Any]) -> str:
+    return "; ".join(str(item) for item in scenario.get("limitations", ()))
+
+
+def _scenario_replay_path(name: str, replay_index: Mapping[str, Any]) -> str:
+    replay_artifacts = replay_index.get("scenarios", {}).get(name, {})
+    return str(replay_artifacts.get("trajectory_png", ""))
+
+
+def _relative_report_link(path_value: str, output_dir: Path) -> str:
+    if not path_value:
+        return ""
+    path = Path(path_value)
+    path_abs = path if path.is_absolute() else Path.cwd() / path
+    try:
+        return path_abs.resolve().relative_to(output_dir.resolve()).as_posix()
+    except ValueError:
+        return str(path_value)
+
+
+def write_matrix_summary_csv(path: Path, summary: Mapping[str, Any], replay_index: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "run_id",
+        "policy_path",
+        "scenario_count",
+        "overall_gate",
+        "scenario",
+        "success_rate",
+        "collision_rate",
+        "unsafe_action_rate",
+        "gate",
+        "description",
+        "limitation",
+        "scorecard_path",
+        "replay_path",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for name, scenario in summary["scenarios"].items():
+            writer.writerow(
+                {
+                    "run_id": _run_id(summary),
+                    "policy_path": summary["policy_path"],
+                    "scenario_count": summary["scenario_count"],
+                    "overall_gate": _overall_gate(summary),
+                    "scenario": name,
+                    "success_rate": _scenario_metric(scenario, "success_rate"),
+                    "collision_rate": _scenario_metric(scenario, "collision_rate"),
+                    "unsafe_action_rate": _scenario_metric(scenario, "unsafe_action_rate"),
+                    "gate": scenario["gate_status"],
+                    "description": scenario.get("description", ""),
+                    "limitation": _scenario_limitations(scenario),
+                    "scorecard_path": scenario["scorecard_json"],
+                    "replay_path": _scenario_replay_path(name, replay_index),
+                }
+            )
+
+
+def write_matrix_report_html(path: Path, summary: Mapping[str, Any], replay_index: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for name, scenario in summary["scenarios"].items():
+        scorecard_path = str(scenario["scorecard_json"])
+        replay_path = _scenario_replay_path(name, replay_index)
+        scorecard_link = _relative_report_link(scorecard_path, path.parent)
+        replay_link = _relative_report_link(replay_path, path.parent)
+        replay_cell = f'<a href="{escape(replay_link)}">{escape(replay_path)}</a>' if replay_path else ""
+        rows.append(
+            "<tr>"
+            f"<th scope=\"row\">{escape(name)}</th>"
+            f"<td>{escape(str(_scenario_metric(scenario, 'success_rate')))}</td>"
+            f"<td>{escape(str(_scenario_metric(scenario, 'collision_rate')))}</td>"
+            f"<td>{escape(str(_scenario_metric(scenario, 'unsafe_action_rate')))}</td>"
+            f"<td>{escape(str(scenario['gate_status']))}</td>"
+            f"<td>{escape(str(scenario.get('description', '')))}</td>"
+            f"<td>{escape(_scenario_limitations(scenario))}</td>"
+            f"<td><a href=\"{escape(scorecard_link)}\">{escape(scorecard_path)}</a></td>"
+            f"<td>{replay_cell}</td>"
+            "</tr>"
+        )
+
+    html = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>kineForge eval matrix report - {escape(_run_id(summary))}</title>
+  <style>
+    body {{ font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 2rem; color: #1f2933; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 1rem; }}
+    th, td {{ border: 1px solid #d9e2ec; padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }}
+    th {{ background: #f0f4f8; }}
+    .summary {{ display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; max-width: 56rem; }}
+    .gate-pass {{ color: #0b6b3a; font-weight: 700; }}
+    .gate-fail {{ color: #9b1c1c; font-weight: 700; }}
+    code {{ background: #f0f4f8; padding: 0.1rem 0.25rem; }}
+  </style>
+</head>
+<body>
+  <h1>kineForge eval matrix report</h1>
+  <dl class="summary">
+    <dt>run_id</dt><dd><code>{escape(_run_id(summary))}</code></dd>
+    <dt>policy path</dt><dd><code>{escape(str(summary["policy_path"]))}</code></dd>
+    <dt>scenario count</dt><dd>{escape(str(summary["scenario_count"]))}</dd>
+    <dt>overall gate</dt><dd class="gate-{escape(_overall_gate(summary).lower())}">{escape(_overall_gate(summary))}</dd>
+  </dl>
+  <h2>Scenarios</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>scenario</th>
+        <th>success_rate</th>
+        <th>collision_rate</th>
+        <th>unsafe_action_rate</th>
+        <th>gate</th>
+        <th>description</th>
+        <th>limitation</th>
+        <th>scorecard path</th>
+        <th>replay path</th>
+      </tr>
+    </thead>
+    <tbody>
+      {''.join(rows)}
+    </tbody>
+  </table>
+</body>
+</html>
+"""
+    path.write_text(html, encoding="utf-8")
 
 
 def load_summary(path: Path) -> dict[str, Any]:

@@ -4,7 +4,13 @@ import argparse
 from pathlib import Path
 
 from kineforge.eval_artifacts import write_eval_artifacts
-from kineforge.matrix import build_matrix_summary, build_replay_index, parse_scenarios
+from kineforge.matrix import (
+    build_matrix_summary,
+    build_replay_index,
+    parse_scenarios,
+    write_matrix_report_html,
+    write_matrix_summary_csv,
+)
 from kineforge.reports import copy_file, prepare_run_dir, timestamp, write_json
 
 
@@ -58,6 +64,8 @@ def main() -> None:
 
     summary_path = matrix_dir / "matrix_summary.json"
     replay_index_path = matrix_dir / "replay_index.json"
+    report_path = matrix_dir / "report.html"
+    csv_path = matrix_dir / "summary.csv"
     summary = build_matrix_summary(
         policy_path=policy_snapshot_path,
         robot=args.robot,
@@ -71,10 +79,14 @@ def main() -> None:
     replay_index = build_replay_index(scenario_results)
     write_json(summary_path, summary)
     write_json(replay_index_path, replay_index)
+    write_matrix_report_html(report_path, summary, replay_index)
+    write_matrix_summary_csv(csv_path, summary, replay_index)
 
     print(f"Matrix dir: {matrix_dir}")
     print(f"Summary JSON: {summary_path}")
     print(f"Replay index JSON: {replay_index_path}")
+    print(f"HTML report: {report_path}")
+    print(f"CSV summary: {csv_path}")
     for name, scenario in summary["scenarios"].items():
         print(f"{name}: {scenario['gate_status']} ({scenario['scorecard_json']})")
 

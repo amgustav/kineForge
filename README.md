@@ -90,6 +90,8 @@ runs/
     train_metadata.json        # present when the evaluated policy came from a kineForge train run
     matrix_summary.json
     replay_index.json
+    report.html
+    summary.csv
     scenarios/
       baseline/
         scorecard.json
@@ -176,7 +178,31 @@ Each matrix run writes:
 * one scenario directory per scenario under `scenarios/<name>/`;
 * one `scorecard.json` per scenario;
 * one aggregate `matrix_summary.json`;
-* one `replay_index.json` mapping scenario names to replay PNG artifacts that were written.
+* one `replay_index.json` mapping scenario names to replay PNG artifacts that were written;
+* one static `report.html` for local inspection;
+* one `summary.csv` for spreadsheet, CLI, or downstream analysis.
+
+Open the static matrix report locally after a run:
+
+```bash
+python eval_matrix.py --policy runs/latest/policy.zip --seed 1
+open runs/eval-matrix-YYYYMMDD-HHMMSS/report.html
+```
+
+The matrix output directory shape is:
+
+```text
+runs/eval-matrix-YYYYMMDD-HHMMSS/
+  matrix_summary.json
+  replay_index.json
+  report.html
+  summary.csv
+  scenarios/
+    <scenario>/
+      scorecard.json
+```
+
+`report.html` is a dependency-free local summary for quick inspection. `summary.csv` has one row per scenario and can be opened in a spreadsheet, inspected with command-line tools, or imported into downstream analysis.
 
 `compare_eval.py` compares two `matrix_summary.json` files and reports aggregate and per-scenario metric deltas.
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import importlib
 import sys
 from pathlib import Path
@@ -9,7 +10,15 @@ import pytest
 
 from kineforge.config import load_env_configs, load_yaml
 from kineforge.evals import build_scorecard
-from kineforge.matrix import build_matrix_summary, build_replay_index, compare_summaries, load_default_scenarios, parse_scenarios
+from kineforge.matrix import (
+    build_matrix_summary,
+    build_replay_index,
+    compare_summaries,
+    load_default_scenarios,
+    parse_scenarios,
+    write_matrix_report_html,
+    write_matrix_summary_csv,
+)
 from kineforge.envs import TabletopReachEnv
 from kineforge.replay import save_distance_over_time_png, save_episode_rewards_png
 from kineforge.reports import write_config_snapshot
@@ -249,6 +258,27 @@ def test_eval_matrix_summary_replay_index_and_comparison(tmp_path):
     )
     replay_index = build_replay_index(before_results)
     comparison = compare_summaries(before_summary, after_summary)
+    before_summary["scenarios"]["moved_target"]["description"] = "Moved target stress"
+    before_summary["scenarios"]["moved_target"]["limitations"] = ["documented limitation"]
+    report_path = tmp_path / "report.html"
+    csv_path = tmp_path / "summary.csv"
+    write_matrix_report_html(report_path, before_summary, replay_index)
+    write_matrix_summary_csv(csv_path, before_summary, replay_index)
+    html = report_path.read_text(encoding="utf-8")
+    rows = list(csv.DictReader(csv_path.open("r", encoding="utf-8", newline="")))
+
+    assert "eval-matrix-20260625-000000" in html
+    assert "unsafe_action_rate" in html
+    assert "Moved target stress" in html
+    assert "documented limitation" in html
+    assert 'href="moved_target/trajectory.png"' in html
+    assert rows[0]["run_id"] == "eval-matrix-20260625-000000"
+    assert rows[0]["scenario_count"] == "2"
+    assert rows[0]["unsafe_action_rate"] == "n/a"
+    assert rows[1]["scenario"] == "moved_target"
+    assert rows[1]["description"] == "Moved target stress"
+    assert rows[1]["limitation"] == "documented limitation"
+    assert rows[1]["replay_path"].endswith("moved_target/trajectory.png")
 
     assert before_summary["scenario_count"] == 2
     assert before_summary["gate"]["pass_count"] == 1
