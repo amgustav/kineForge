@@ -19,6 +19,14 @@ from kineforge.matrix import (
     write_matrix_report_html,
     write_matrix_summary_csv,
 )
+from kineforge.sweeps import (
+    SweepConfig,
+    SweepVariant,
+    build_sweep_summary,
+    load_sweep_config,
+    merge_config,
+    rank_variant_rows,
+)
 from kineforge.envs import TabletopReachEnv
 from kineforge.replay import save_distance_over_time_png, save_episode_rewards_png
 from kineforge.reports import write_config_snapshot
@@ -183,6 +191,133 @@ def test_eval_matrix_scenario_parser_supports_named_failure_sets():
     with pytest.raises(ValueError, match="duplicate scenario names"):
         parse_scenarios(["baseline=", "baseline=moved_target"])
 
+
+
+def test_sweep_config_loading_resolves_variants_and_overrides():
+    sweep_config = load_sweep_config("configs/sweeps/default.yaml", seed_override=7, timesteps_override=11)
+
+    assert sweep_config.name == "default"
+    assert [variant.name for variant in sweep_config.variants] == [
+        "baseline",
+        "distance_heavy",
+        "progress_heavy",
+    ]
+    assert all(variant.seed == 7 for variant in sweep_config.variants)
+    assert all(variant.timesteps == 11 for variant in sweep_config.variants)
+    assert all(variant.episodes == 3 for variant in sweep_config.variants)
+
+    distance_heavy = sweep_config.variants[1]
+    merged_reward = merge_config({"weights": {"distance": 2.0, "progress": 10.0}}, distance_heavy.reward_overrides)
+    assert merged_reward["weights"]["distance"] == 2.5
+    assert merged_reward["weights"]["progress"] == 10.0
+
+
+def test_sweep_summary_ranking_prefers_pass_success_then_distance(tmp_path):
+    rows = rank_variant_rows(
+        [
+            {
+                "variant": "fail_high_success",
+                "gate_status": "FAIL",
+                "success_rate": 1.0,
+                "mean_final_distance": 0.01,
+            },
+            {
+                "variant": "pass_far",
+                "gate_status": "PASS",
+                "success_rate": 0.8,
+                "mean_final_distance": 0.04,
+            },
+            {
+                "variant": "pass_near",
+                "gate_status": "PASS",
+                "success_rate": 0.8,
+                "mean_final_distance": 0.03,
+            },
+            {
+                "variant": "pass_best_success",
+                "gate_status": "PASS",
+                "success_rate": 1.0,
+                "mean_final_distance": 0.05,
+            },
+        ]
+    )
+    assert [row["variant"] for row in rows] == [
+        "pass_best_success",
+        "pass_near",
+        "pass_far",
+        "fail_high_success",
+    ]
+    assert [row["rank"] for row in rows] == [1, 2, 3, 4]
+
+    variants = {
+        "pass_best_success": SweepVariant(
+            name="pass_best_success",
+            robot="arm_v0",
+            task="tabletop_reach",
+            reward="reach_v0",
+            failures=(),
+            episodes=1,
+            seed=1,
+            timesteps=10,
+            description="",
+            task_overrides={},
+            reward_overrides={},
+        ),
+        "fail_high_success": SweepVariant(
+            name="fail_high_success",
+            robot="arm_v0",
+            task="tabletop_reach",
+            reward="reach_v0",
+            failures=(),
+            episodes=1,
+            seed=1,
+            timesteps=10,
+            description="",
+            task_overrides={},
+            reward_overrides={},
+        ),
+    }
+    summary = build_sweep_summary(
+        sweep_config=SweepConfig("unit", tmp_path / "sweep.yaml", tuple(variants.values())),
+        output_dir=tmp_path,
+        run_timestamp="20260626-000000",
+        variant_results={
+            "pass_best_success": {
+                "variant": variants["pass_best_success"],
+                "scorecard": {
+                    "gate": {"status": "PASS"},
+                    "summary": {
+                        "success_rate": 1.0,
+                        "mean_final_distance": 0.05,
+                        "timeout_rate": 0.0,
+                        "mean_episode_reward": 1.0,
+                        "collision_rate": 0.0,
+                    },
+                },
+                "artifacts": {"policy_zip": "policy.zip", "config_snapshot_yaml": "config_snapshot.yaml"},
+                "scorecard_path": tmp_path / "pass" / "scorecard.json",
+                "metadata_path": tmp_path / "pass" / "eval_metadata.json",
+            },
+            "fail_high_success": {
+                "variant": variants["fail_high_success"],
+                "scorecard": {
+                    "gate": {"status": "FAIL"},
+                    "summary": {
+                        "success_rate": 1.0,
+                        "mean_final_distance": 0.01,
+                        "timeout_rate": 0.0,
+                        "mean_episode_reward": 1.0,
+                        "collision_rate": 0.0,
+                    },
+                },
+                "artifacts": {"policy_zip": "policy.zip", "config_snapshot_yaml": "config_snapshot.yaml"},
+                "scorecard_path": tmp_path / "fail" / "scorecard.json",
+                "metadata_path": tmp_path / "fail" / "eval_metadata.json",
+            },
+        },
+    )
+    assert [row["variant"] for row in summary["ranked_variants"]] == ["pass_best_success", "fail_high_success"]
+    assert summary["gate"] == {"pass_count": 1, "fail_count": 1}
 
 def test_eval_matrix_summary_replay_index_and_comparison(tmp_path):
     def make_result(name: str, success: bool, final_distance: float):

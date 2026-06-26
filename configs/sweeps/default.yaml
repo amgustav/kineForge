@@ -1,0 +1,26 @@
+name: default
+robot: arm_v0
+task: tabletop_reach
+reward: reach_v0
+seed: 1
+timesteps: 1000
+episodes: 3
+variants:
+  - name: baseline
+    description: Base tabletop reach reward and task config.
+    seed: 1
+    timesteps: 1000
+  - name: distance_heavy
+    description: Raises the terminal distance penalty weight.
+    seed: 1
+    timesteps: 1000
+    reward_overrides:
+      weights:
+        distance: 2.5
+  - name: progress_heavy
+    description: Raises progress shaping while keeping the same task.
+    seed: 1
+    timesteps: 1000
+    reward_overrides:
+      weights:
+        progress: 12.0

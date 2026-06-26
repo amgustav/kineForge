@@ -67,7 +67,7 @@ Compare two eval matrix summaries:
 python compare_eval.py --before runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --after runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --output runs/matrix_comparison.json
 ```
 
-Current status: kineForge has the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecards, trajectory PNGs, timestamped runs, explicit seeds, metadata, config snapshots, eval matrices, replay indexes, and matrix summary comparison.
+Current status: kineForge has the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecards, trajectory PNGs, timestamped runs, explicit seeds, metadata, config snapshots, eval matrices, config sweeps, replay indexes, and matrix/sweep summary reports.
 
 Outputs:
 
@@ -107,6 +107,16 @@ runs/
         trajectory.png
         distance_over_time.png
         episode_rewards.png
+  sweep-YYYYMMDD-HHMMSS/
+    sweep_summary.json
+    sweep_report.html
+    summary.csv
+    variants/
+      baseline/
+        policy.zip
+        scorecard.json
+        eval_metadata.json
+        config_snapshot.yaml
   latest/
     policy.zip
     scorecard.json
@@ -208,6 +218,33 @@ runs/eval-matrix-YYYYMMDD-HHMMSS/
 
 ---
 
+## Config sweeps
+
+`sweep.py` trains and evaluates multiple named task/reward config variants from one YAML file, then ranks them by gate status, success rate, and mean final distance.
+
+```bash
+python sweep.py --config configs/sweeps/default.yaml --timesteps 1000 --seed 1
+```
+
+Each sweep writes one timestamped output directory:
+
+```text
+runs/sweep-YYYYMMDD-HHMMSS/
+  sweep_summary.json
+  sweep_report.html
+  summary.csv
+  variants/
+    <variant_name>/
+      policy.zip
+      scorecard.json
+      eval_metadata.json
+      config_snapshot.yaml
+```
+
+Use `sweep_summary.json` for machine-readable ranking, `summary.csv` for spreadsheet/CLI inspection, and `sweep_report.html` for a dependency-free local report.
+
+---
+
 
 ## How it works
 
@@ -217,7 +254,7 @@ Observations include joint state, end-effector position, target position, and th
 
 Training is handled by `train.py` using Stable-Baselines3 PPO.
 
-Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot. Eval matrices are handled by `eval_matrix.py`; summary comparison is handled by `compare_eval.py`.
+Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot. Eval matrices are handled by `eval_matrix.py`, config sweeps by `sweep.py`, and summary comparison by `compare_eval.py`.
 
 Reward terms are loaded from YAML and include distance-to-target, progress shaping, success bonus, control penalty, and timeout penalty.
 
@@ -230,8 +267,8 @@ configs/
   failures/basic_failures.yaml
   rewards/reach_v0.yaml
   robots/arm_v0.yaml
+  sweeps/default.yaml
   tasks/tabletop_reach.yaml
-
 kineforge/
   envs/tabletop_reach_env.py
   config.py
@@ -239,6 +276,7 @@ kineforge/
   eval_artifacts.py
   randomization.py
   matrix.py
+  sweeps.py
   replay.py
   reports.py
   rewards.py
@@ -250,6 +288,7 @@ train.py
 eval.py
 eval_matrix.py
 compare_eval.py
+sweep.py
 ```
 
 ---
@@ -270,7 +309,7 @@ compare_eval.py
 
 Next experiment-quality steps:
 
-* config sweep runner
+* configurable sweep presets
 * configurable matrix presets
 * stricter eval gates
 * real collision/contact metrics
