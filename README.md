@@ -79,15 +79,10 @@ The current environment is intentionally narrow: one arm, one tabletop reaching 
 | `examples/results/v0.6.0/` | Committed example matrix summary, CSV, HTML report, replay gallery, scorecards, and trajectory PNGs. |
 | `RESULTS.md` | Reproduction commands and metric summary for the committed example artifacts. |
 
-## Stack
+## Technical basis
 
-- MuJoCo
-- Gymnasium
-- Stable-Baselines3 PPO
-- NumPy
-- PyYAML
-- matplotlib
-- pytest
+kineForge is built on MuJoCo for rigid-body simulation, Gymnasium for environment contracts, and Stable-Baselines3 PPO for baseline policy optimization. NumPy handles numerics and PyYAML defines experiment configuration.
+
 
 ## License
 
