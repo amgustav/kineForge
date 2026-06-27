@@ -89,8 +89,6 @@ The current environment is intentionally narrow: one arm, one tabletop reaching 
 - matplotlib
 - pytest
 
-## Credits
+## License
 
-Built with MuJoCo, Gymnasium, Stable-Baselines3, NumPy, PyYAML, matplotlib, and pytest.
-
-MIT licensed.
+MIT.
