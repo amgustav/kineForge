@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>kineForge eval matrix report - eval-matrix-20260627-111404</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 2rem; color: #1f2933; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #d9e2ec; padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
+    th { background: #f0f4f8; }
+    .summary { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; max-width: 56rem; }
+    .gate-pass { color: #0b6b3a; font-weight: 700; }
+    .gate-fail { color: #9b1c1c; font-weight: 700; }
+    code { background: #f0f4f8; padding: 0.1rem 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>kineForge eval matrix report</h1>
+  <dl class="summary">
+    <dt>run_id</dt><dd><code>eval-matrix-20260627-111404</code></dd>
+    <dt>policy path</dt><dd><code>not_committed; reproduce with the commands in RESULTS.md</code></dd>
+    <dt>scenario count</dt><dd>7</dd>
+    <dt>gate profile</dt><dd><code>standard</code></dd>
+    <dt>overall gate</dt><dd class="gate-pass">PASS</dd>
+  </dl>
+  <h2>Scenarios</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>rank</th>
+        <th>scenario</th>
+        <th>success_rate</th>
+        <th>mean_final_distance</th>
+        <th>collision_rate</th>
+        <th>unsafe_action_rate</th>
+        <th>gate</th>
+        <th>failed criteria</th>
+        <th>gate explanation</th>
+        <th>description</th>
+        <th>limitation</th>
+        <th>scorecard path</th>
+        <th>replay path</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><th scope="row">observation_noise</th><td>1.0</td><td>0.039876202762397644</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Adds configured Gaussian noise to observations during eval.</td><td></td><td><a href="scenarios/observation_noise/scorecard.json">examples/results/v0.6.0/scenarios/observation_noise/scorecard.json</a></td><td><a href="scenarios/observation_noise/trajectory.png">examples/results/v0.6.0/scenarios/observation_noise/trajectory.png</a></td></tr><tr><td>2</td><th scope="row">baseline</th><td>1.0</td><td>0.04394251127449883</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>No injected evaluation failures.</td><td></td><td><a href="scenarios/baseline/scorecard.json">examples/results/v0.6.0/scenarios/baseline/scorecard.json</a></td><td><a href="scenarios/baseline/trajectory.png">examples/results/v0.6.0/scenarios/baseline/trajectory.png</a></td></tr><tr><td>3</td><th scope="row">high_friction</th><td>1.0</td><td>0.04394251127449883</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Placeholder for higher table/contact friction.</td><td>The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so high_friction is documented but not physically modeled yet.</td><td><a href="scenarios/high_friction/scorecard.json">examples/results/v0.6.0/scenarios/high_friction/scorecard.json</a></td><td><a href="scenarios/high_friction/trajectory.png">examples/results/v0.6.0/scenarios/high_friction/trajectory.png</a></td></tr><tr><td>4</td><th scope="row">low_friction</th><td>1.0</td><td>0.04394251127449883</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Placeholder for lower table/contact friction.</td><td>The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so low_friction is documented but not physically modeled yet.</td><td><a href="scenarios/low_friction/scorecard.json">examples/results/v0.6.0/scenarios/low_friction/scorecard.json</a></td><td><a href="scenarios/low_friction/trajectory.png">examples/results/v0.6.0/scenarios/low_friction/trajectory.png</a></td></tr><tr><td>5</td><th scope="row">action_noise</th><td>1.0</td><td>0.04626533626888723</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Adds configured Gaussian perturbation to policy actions during eval.</td><td></td><td><a href="scenarios/action_noise/scorecard.json">examples/results/v0.6.0/scenarios/action_noise/scorecard.json</a></td><td><a href="scenarios/action_noise/trajectory.png">examples/results/v0.6.0/scenarios/action_noise/trajectory.png</a></td></tr><tr><td>6</td><th scope="row">combined_hard</th><td>1.0</td><td>0.04804580609978152</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Combines target shift, observation noise, action noise, and weak actuator effects.</td><td>Excludes low_friction and high_friction because friction is not physically modeled in v0.</td><td><a href="scenarios/combined_hard/scorecard.json">examples/results/v0.6.0/scenarios/combined_hard/scorecard.json</a></td><td><a href="scenarios/combined_hard/trajectory.png">examples/results/v0.6.0/scenarios/combined_hard/trajectory.png</a></td></tr><tr><td>7</td><th scope="row">target_shift</th><td>1.0</td><td>0.04945063540045542</td><td>0.0</td><td>n/a</td><td>PASS</td><td></td><td>PASS: all standard gate criteria passed.</td><td>Moves the target by the configured offset before each eval episode.</td><td></td><td><a href="scenarios/target_shift/scorecard.json">examples/results/v0.6.0/scenarios/target_shift/scorecard.json</a></td><td><a href="scenarios/target_shift/trajectory.png">examples/results/v0.6.0/scenarios/target_shift/trajectory.png</a></td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

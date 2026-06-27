@@ -1,0 +1,25 @@
+{
+  "scenarios": {
+    "action_noise": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/action_noise/trajectory.png"
+    },
+    "baseline": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/baseline/trajectory.png"
+    },
+    "combined_hard": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/combined_hard/trajectory.png"
+    },
+    "high_friction": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/high_friction/trajectory.png"
+    },
+    "low_friction": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/low_friction/trajectory.png"
+    },
+    "observation_noise": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/observation_noise/trajectory.png"
+    },
+    "target_shift": {
+      "trajectory_png": "examples/results/v0.6.0/scenarios/target_shift/trajectory.png"
+    }
+  }
+}

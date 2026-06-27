@@ -30,6 +30,8 @@ Run the default reward/config sweep:
 python sweep.py --preset default --timesteps 1000 --seed 1
 ```
 
+See [`RESULTS.md`](RESULTS.md) for a committed v0.6.0 result capsule with reproducible commands and example matrix artifacts.
+
 Useful discovery commands:
 
 ```bash

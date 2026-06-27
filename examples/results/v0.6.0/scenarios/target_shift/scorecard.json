@@ -1,0 +1,128 @@
+{
+  "artifacts": {
+    "config_snapshot_yaml": "runs/eval-matrix-20260627-111404/scenarios/target_shift/config_snapshot.yaml",
+    "distance_over_time_png": "runs/eval-matrix-20260627-111404/scenarios/target_shift/distance_over_time.png",
+    "episode_rewards_png": "runs/eval-matrix-20260627-111404/scenarios/target_shift/episode_rewards.png",
+    "eval_metadata_json": "runs/eval-matrix-20260627-111404/scenarios/target_shift/eval_metadata.json",
+    "policy_zip": "runs/eval-matrix-20260627-111404/policy.zip",
+    "scorecard_json": "runs/eval-matrix-20260627-111404/scenarios/target_shift/scorecard.json",
+    "trajectory_png": "runs/eval-matrix-20260627-111404/scenarios/target_shift/trajectory.png"
+  },
+  "collision_rate_explanation": "Collision detection is not implemented in v0.2.0; collision_rate is reported as 0.0 and should not be interpreted as a safety metric.",
+  "episodes": 3,
+  "failure_modes": [
+    "moved_target"
+  ],
+  "gate": {
+    "criteria": {
+      "mean_final_distance": {
+        "operator": "<=",
+        "passed": true,
+        "threshold": 0.05,
+        "value": 0.04945063540045542
+      },
+      "success_rate": {
+        "operator": ">=",
+        "passed": true,
+        "threshold": 0.8,
+        "value": 1.0
+      },
+      "timeout_rate": {
+        "operator": "<=",
+        "passed": true,
+        "threshold": 0.3,
+        "value": 0.0
+      }
+    },
+    "explanation": "PASS: all standard gate criteria passed.",
+    "failed_criteria": [],
+    "profile": "standard",
+    "profile_description": "Backwards-compatible default evaluation gate.",
+    "status": "PASS",
+    "thresholds": {
+      "max_mean_final_distance": 0.05,
+      "max_timeout_rate": 0.3,
+      "min_success_rate": 0.8
+    }
+  },
+  "per_episode": [
+    {
+      "active_failures": [
+        "moved_target"
+      ],
+      "episode": 0,
+      "episode_reward": 9.473146766865153,
+      "final_distance": 0.04945063540045542,
+      "final_position": [
+        0.5763626179361195,
+        -0.03279904073552336,
+        0.04
+      ],
+      "seed": 1,
+      "steps": 7,
+      "success": true,
+      "target_position": [
+        0.53,
+        -0.05,
+        0.04
+      ],
+      "timeout": false
+    },
+    {
+      "active_failures": [
+        "moved_target"
+      ],
+      "episode": 1,
+      "episode_reward": 9.473146766865153,
+      "final_distance": 0.04945063540045542,
+      "final_position": [
+        0.5763626179361195,
+        -0.03279904073552336,
+        0.04
+      ],
+      "seed": 2,
+      "steps": 7,
+      "success": true,
+      "target_position": [
+        0.53,
+        -0.05,
+        0.04
+      ],
+      "timeout": false
+    },
+    {
+      "active_failures": [
+        "moved_target"
+      ],
+      "episode": 2,
+      "episode_reward": 9.473146766865153,
+      "final_distance": 0.04945063540045542,
+      "final_position": [
+        0.5763626179361195,
+        -0.03279904073552336,
+        0.04
+      ],
+      "seed": 3,
+      "steps": 7,
+      "success": true,
+      "target_position": [
+        0.53,
+        -0.05,
+        0.04
+      ],
+      "timeout": false
+    }
+  ],
+  "policy_path": "runs/eval-matrix-20260627-111404/policy.zip",
+  "reward": "reach_v0",
+  "robot": "arm_v0",
+  "seed": 1,
+  "summary": {
+    "collision_rate": 0.0,
+    "mean_episode_reward": 9.473146766865153,
+    "mean_final_distance": 0.04945063540045542,
+    "success_rate": 1.0,
+    "timeout_rate": 0.0
+  },
+  "task": "tabletop_reach"
+}

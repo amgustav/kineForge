@@ -1,0 +1,211 @@
+{
+  "aggregate": {
+    "collision_rate": 0.0,
+    "mean_episode_reward": 7.934829059354072,
+    "mean_final_distance": 0.0450665020507169,
+    "success_rate": 1.0,
+    "timeout_rate": 0.0
+  },
+  "episodes_per_scenario": 3,
+  "gate": {
+    "fail_count": 0,
+    "pass_count": 7,
+    "pass_rate": 1.0
+  },
+  "gate_profile": "standard",
+  "matrix_preset": "default",
+  "policy_path": "not_committed; reproduce with the commands in RESULTS.md",
+  "ranked_scenarios": [
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.039876202762397644,
+      "rank": 1,
+      "scenario": "observation_noise",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04394251127449883,
+      "rank": 2,
+      "scenario": "baseline",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04394251127449883,
+      "rank": 3,
+      "scenario": "high_friction",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04394251127449883,
+      "rank": 4,
+      "scenario": "low_friction",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04626533626888723,
+      "rank": 5,
+      "scenario": "action_noise",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04804580609978152,
+      "rank": 6,
+      "scenario": "combined_hard",
+      "success_rate": 1.0
+    },
+    {
+      "gate_status": "PASS",
+      "mean_final_distance": 0.04945063540045542,
+      "rank": 7,
+      "scenario": "target_shift",
+      "success_rate": 1.0
+    }
+  ],
+  "ranking": [
+    "gate_status",
+    "success_rate desc",
+    "mean_final_distance asc"
+  ],
+  "reward": "reach_v0",
+  "robot": "arm_v0",
+  "scenario_count": 7,
+  "scenarios": {
+    "action_noise": {
+      "description": "Adds configured Gaussian perturbation to policy actions during eval.",
+      "failure_modes": [
+        "action_noise"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "scorecard_json": "examples/results/v0.6.0/scenarios/action_noise/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 7.383928865649719,
+        "mean_final_distance": 0.04626533626888723,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "baseline": {
+      "description": "No injected evaluation failures.",
+      "failure_modes": [],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "scorecard_json": "examples/results/v0.6.0/scenarios/baseline/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 7.506981163551839,
+        "mean_final_distance": 0.04394251127449883,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "combined_hard": {
+      "description": "Combines target shift, observation noise, action noise, and weak actuator effects.",
+      "failure_modes": [
+        "action_noise",
+        "moved_target",
+        "noisy_observation",
+        "weak_actuator"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "limitations": [
+        "Excludes low_friction and high_friction because friction is not physically modeled in v0."
+      ],
+      "scorecard_json": "examples/results/v0.6.0/scenarios/combined_hard/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 8.590212903571262,
+        "mean_final_distance": 0.04804580609978152,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "high_friction": {
+      "description": "Placeholder for higher table/contact friction.",
+      "failure_modes": [
+        "high_friction"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "limitations": [
+        "The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so high_friction is documented but not physically modeled yet."
+      ],
+      "scorecard_json": "examples/results/v0.6.0/scenarios/high_friction/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 7.506981163551839,
+        "mean_final_distance": 0.04394251127449883,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "low_friction": {
+      "description": "Placeholder for lower table/contact friction.",
+      "failure_modes": [
+        "low_friction"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "limitations": [
+        "The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so low_friction is documented but not physically modeled yet."
+      ],
+      "scorecard_json": "examples/results/v0.6.0/scenarios/low_friction/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 7.506981163551839,
+        "mean_final_distance": 0.04394251127449883,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "observation_noise": {
+      "description": "Adds configured Gaussian noise to observations during eval.",
+      "failure_modes": [
+        "noisy_observation"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "scorecard_json": "examples/results/v0.6.0/scenarios/observation_noise/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 7.5755713887368445,
+        "mean_final_distance": 0.039876202762397644,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    },
+    "target_shift": {
+      "description": "Moves the target by the configured offset before each eval episode.",
+      "failure_modes": [
+        "moved_target"
+      ],
+      "gate_explanation": "PASS: all standard gate criteria passed.",
+      "gate_failed_criteria": [],
+      "gate_status": "PASS",
+      "scorecard_json": "examples/results/v0.6.0/scenarios/target_shift/scorecard.json",
+      "summary": {
+        "collision_rate": 0.0,
+        "mean_episode_reward": 9.473146766865153,
+        "mean_final_distance": 0.04945063540045542,
+        "success_rate": 1.0,
+        "timeout_rate": 0.0
+      }
+    }
+  },
+  "seed": 1,
+  "task": "tabletop_reach",
+  "timestamp": "20260627-111404"
+}
