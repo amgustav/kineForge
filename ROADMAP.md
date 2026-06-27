@@ -1,9 +1,9 @@
 # kineForge Roadmap
 
 Last updated: 2026-06-27
-Current baseline: v0.5.0
+Current baseline: v0.6.0
 
-This roadmap defines the intended direction of kineForge from v0.5.0 to v1.0.0.
+This roadmap defines the intended direction of kineForge from v0.6.0 to v1.0.0.
 
 It is an outcome roadmap, not a step-by-step implementation script.
 
@@ -13,7 +13,7 @@ Agents should use this file together with:
 - `PROJECT_DOCTRINE.md`
 - `README.md`
 
-## Current State: v0.5.0
+## Current State: v0.6.0
 
 kineForge currently provides:
 
@@ -31,6 +31,7 @@ kineForge currently provides:
 - static HTML and CSV matrix/sweep reports
 - replay indexes
 - matrix summary comparison
+- reproducible results capsule with committed example matrix artifacts
 - test coverage for core behavior
 
 Current public positioning:
@@ -136,39 +137,29 @@ v0.5.0 should make it possible to define and run named experiment presets withou
 - No cloud.
 - No broad benchmark suite.
 
-## v0.6.0 - Contact, Collision, and Safety-Relevant Metrics
+## v0.6.0 - Reproducible Results Capsule
 
 ### Objective
 
-Replace placeholder collision/contact values with real contact-aware metrics where possible in the current MuJoCo environment.
+Publish a small, honest public proof object showing that kineForge can train a policy, evaluate it across configured failures, and write inspectable local artifacts.
 
 ### Motivation
 
-The current v0 lineage explicitly documents that collision rate is not a real safety metric. v0.6.0 should make contact/collision reporting more meaningful while remaining honest about limitations.
+After v0.5.0 added presets and gate profiles, the strongest next public milestone was not more internal plumbing. It was a reproducible example result that shows the current system working end to end.
 
-### Candidate capabilities
+### Delivered capabilities
 
-- MuJoCo contact inspection.
-- Real collision/contact count where applicable.
-- Contact-rate metric.
-- Unsafe-contact placeholder replaced with actual logic where possible.
-- Gate options that include contact/collision thresholds.
-- Clear documentation of what is and is not measured.
-
-### Expected artifacts
-
-- updated scorecards
-- updated eval metadata
-- contact/collision plots or summaries if useful
-- tests for contact metric extraction
-- README limitation updates
+- `RESULTS.md` with exact reproduction commands.
+- Curated example matrix output under `examples/results/v0.6.0/`.
+- Committed matrix summary, CSV, static HTML report, scorecards, replay index, and selected trajectory PNGs.
+- Clear limitations on one robot/task, placeholder collision metrics, and non-modeled friction placeholders.
 
 ### Exit criteria
 
-- Collision/contact values are no longer misleading placeholders when the environment supports measurement.
-- Reports clearly explain metric semantics.
+- Result capsule exists.
+- Reproduction commands are documented.
+- Example artifacts are committed without a policy file or large generated run directory.
 - Tests pass.
-- Existing eval/matrix/sweep flows still work.
 - v0.6.0 tag and release created.
 
 ### Non-goals
@@ -177,6 +168,11 @@ The current v0 lineage explicitly documents that collision rate is not a real sa
 - No hardware deployment.
 - No weapons or fire-control framing.
 - No broad safety platform.
+
+
+## v0.6.x / v0.8.0 - Contact, Collision, and Safety-Relevant Metrics
+
+Contact/collision metrics remain important, but they should only be implemented when the environment can support them honestly. Do not replace the placeholder collision value with another placeholder.
 
 ## v0.7.0 - Replay and Visual Inspection Improvements
 
@@ -364,10 +360,10 @@ When an agent is asked to work autonomously toward a target version:
 
 ## Immediate Next Step
 
-The next immediate repository task after v0.5.0 is:
+The next immediate repository task after v0.6.0 is:
 
 ```text
-v0.6.0 contact, collision, and safety-relevant metrics
+v0.7.0 replay/showcase artifact layer
 ```
 
-This means replacing placeholder collision/contact values with honest contact-aware metrics where the current MuJoCo environment supports them.
+This means making the committed result artifacts easier to inspect without adding a web app, database, or heavy visualization stack.
