@@ -94,5 +94,3 @@ The current environment is intentionally narrow: one arm, one tabletop reaching 
 Built with MuJoCo, Gymnasium, Stable-Baselines3, NumPy, PyYAML, matplotlib, and pytest.
 
 MIT licensed.
-
-Contributor and agent workflow notes live in `PROJECT_DOCTRINE.md`, `ROADMAP.md`, and `AGENTS.md`.
