@@ -12,6 +12,14 @@ robot → task → reward → train → failures → eval → scorecard → repl
 
 ---
 
+## Project documentation
+
+- [`PROJECT_DOCTRINE.md`](PROJECT_DOCTRINE.md) defines the project mission, engineering doctrine, scope boundaries, and autonomous workflow.
+- [`ROADMAP.md`](ROADMAP.md) defines the milestone direction from the current baseline toward v1.0.0.
+- [`AGENTS.md`](AGENTS.md) defines practical rules future coding agents must follow in this repository.
+
+---
+
 ## Quickstart
 
 ```bash

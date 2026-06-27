@@ -2,6 +2,15 @@
 
 kineForge is an open-source RL-first embodied AI testbed for robot policy training, stress testing, evaluation, comparison, and replay.
 
+## Required Reading
+
+Every future agent session must read these files before editing:
+
+- `AGENTS.md`
+- `PROJECT_DOCTRINE.md`
+- `ROADMAP.md`
+- `README.md`
+
 ## v0 Goal
 
 Build the smallest useful robot-learning loop:

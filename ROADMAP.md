@@ -1,0 +1,379 @@
+# kineForge Roadmap
+
+Last updated: 2026-06-27
+Current baseline: v0.4.0
+
+This roadmap defines the intended direction of kineForge from v0.4.0 to v1.0.0.
+
+It is an outcome roadmap, not a step-by-step implementation script.
+
+Agents should use this file together with:
+
+- `AGENTS.md`
+- `PROJECT_DOCTRINE.md`
+- `README.md`
+
+## Current State: v0.4.0
+
+kineForge currently provides:
+
+- MuJoCo tabletop reach environment
+- PPO training via Stable-Baselines3
+- Gymnasium environment interface
+- YAML configs for robot, task, reward, failures, randomization, and sweeps
+- deterministic evaluation
+- JSON scorecards
+- timestamped run directories
+- eval matrices
+- static HTML and CSV matrix reports
+- replay indexes
+- matrix summary comparison
+- config sweep runner
+- sweep summaries, reports, and CSV outputs
+- test coverage for core behavior
+
+Current public positioning:
+
+> RL-first robot policy testbed: train, stress-test, evaluate, and replay MuJoCo robot policies.
+
+## Roadmap Principles
+
+The roadmap follows this sequence:
+
+1. Improve configurability.
+2. Improve evaluation quality.
+3. Improve metrics.
+4. Improve replay and inspection.
+5. Expand task/robot scope carefully.
+6. Stabilize toward v1.0.0.
+
+Do not skip directly to broad robotics platform work.
+
+Do not add a web app, database, cloud architecture, or large framework unless the roadmap explicitly changes.
+
+## v0.4.x - Documentation and Autonomous Workflow Foundation
+
+### Objective
+
+Make the repository easier for humans and autonomous agents to continue safely.
+
+### Candidate improvements
+
+- Add `PROJECT_DOCTRINE.md`.
+- Add `ROADMAP.md`.
+- Update `AGENTS.md` to require reading project doctrine and roadmap.
+- Update README with project documentation links.
+- Improve contributor/developer guidance.
+- Clarify release/version workflow.
+
+### Exit criteria
+
+- `PROJECT_DOCTRINE.md` exists.
+- `ROADMAP.md` exists.
+- `AGENTS.md` points to both files.
+- README explains the documentation hierarchy.
+- Tests still pass.
+- Commit pushed.
+
+### Non-goals
+
+- No new robot feature.
+- No new architecture.
+- No v0.5.0 capability work until documentation source-of-truth exists.
+
+## v0.5.0 - Configurable Presets and Stricter Gates
+
+### Objective
+
+Turn the current matrix/sweep functionality into a cleaner experiment system with configurable presets and stronger evaluation gates.
+
+### Motivation
+
+v0.4.0 added config sweeps. The next bottleneck is making matrix and sweep configurations easier to reuse, compare, and evaluate rigorously.
+
+### Outcomes
+
+v0.5.0 should make it possible to define and run named experiment presets without manually constructing long CLI commands each time.
+
+### Candidate capabilities
+
+- Configurable matrix presets.
+- Configurable sweep presets.
+- Named gate profiles.
+- Stricter gate thresholds.
+- Better summary ranking logic.
+- Clear failure/gate explanations in reports.
+- Better validation for malformed configs.
+- CLI support for listing available presets.
+
+### Expected artifacts
+
+- preset config files
+- matrix preset reports
+- sweep preset reports
+- updated JSON summaries
+- updated HTML reports
+- updated CSV outputs
+- tests for preset loading and gate evaluation
+
+### Exit criteria
+
+- Default preset system works.
+- Users can run named matrix/sweep presets.
+- Gate profiles are documented.
+- Existing commands remain backwards-compatible.
+- Tests pass.
+- README updated.
+- v0.5.0 tag and release created.
+
+### Non-goals
+
+- No new robot.
+- No new task.
+- No web UI.
+- No database.
+- No cloud.
+- No broad benchmark suite.
+
+## v0.6.0 - Contact, Collision, and Safety-Relevant Metrics
+
+### Objective
+
+Replace placeholder collision/contact values with real contact-aware metrics where possible in the current MuJoCo environment.
+
+### Motivation
+
+The current v0 lineage explicitly documents that collision rate is not a real safety metric. v0.6.0 should make contact/collision reporting more meaningful while remaining honest about limitations.
+
+### Candidate capabilities
+
+- MuJoCo contact inspection.
+- Real collision/contact count where applicable.
+- Contact-rate metric.
+- Unsafe-contact placeholder replaced with actual logic where possible.
+- Gate options that include contact/collision thresholds.
+- Clear documentation of what is and is not measured.
+
+### Expected artifacts
+
+- updated scorecards
+- updated eval metadata
+- contact/collision plots or summaries if useful
+- tests for contact metric extraction
+- README limitation updates
+
+### Exit criteria
+
+- Collision/contact values are no longer misleading placeholders when the environment supports measurement.
+- Reports clearly explain metric semantics.
+- Tests pass.
+- Existing eval/matrix/sweep flows still work.
+- v0.6.0 tag and release created.
+
+### Non-goals
+
+- No claim of real-world safety certification.
+- No hardware deployment.
+- No weapons or fire-control framing.
+- No broad safety platform.
+
+## v0.7.0 - Replay and Visual Inspection Improvements
+
+### Objective
+
+Make evaluation results easier to inspect visually.
+
+### Motivation
+
+kineForge already writes PNG plots and static reports. The next step is better replay/inspection artifacts so failures are easier to understand.
+
+### Candidate capabilities
+
+- Optional video replay.
+- Better trajectory visualizations.
+- Failure annotations in replay outputs.
+- Links from HTML reports to replay artifacts.
+- Replay bundles per eval matrix scenario.
+- Comparison-friendly visual outputs.
+
+### Expected artifacts
+
+- optional video files
+- improved PNGs
+- replay index improvements
+- HTML report links
+- tests for artifact generation where feasible
+
+### Exit criteria
+
+- Replay artifacts are easier to inspect.
+- Existing PNG outputs remain available.
+- New video outputs are optional and dependency-light.
+- Matrix/sweep reports link to relevant artifacts.
+- v0.7.0 tag and release created.
+
+### Non-goals
+
+- No heavy visualization framework.
+- No web server.
+- No interactive dashboard.
+- No dependency-heavy rendering pipeline unless explicitly justified.
+
+## v0.8.0 - Carefully Broader Tasks and Variants
+
+### Objective
+
+Expand beyond the single baseline task only if the existing evaluation infrastructure is strong enough.
+
+### Motivation
+
+After configs, gates, metrics, and replay improve, kineForge can start demonstrating breadth without becoming a robot zoo.
+
+### Candidate capabilities
+
+- Additional task variant using the same robot.
+- Additional target distributions.
+- More structured domain randomization presets.
+- More meaningful failure combinations.
+- Optional second simple robot embodiment only if it does not bloat architecture.
+
+### Expected artifacts
+
+- new task configs
+- new randomization configs
+- new matrix presets
+- comparison reports across variants
+- tests for config/task loading
+
+### Exit criteria
+
+- At least one meaningful new task or task variant exists.
+- The architecture remains simple.
+- The README still explains the project in 10 seconds.
+- Tests pass.
+- v0.8.0 tag and release created.
+
+### Non-goals
+
+- No robot zoo.
+- No humanoid simulator.
+- No complex manipulation suite.
+- No broad benchmark claims.
+
+## v0.9.0 - Experiment Registry and Reproducibility Polish
+
+### Objective
+
+Make accumulated experiment outputs easier to track, compare, and reproduce.
+
+### Motivation
+
+As matrix runs and sweeps accumulate, the project needs a cleaner local experiment index.
+
+### Candidate capabilities
+
+- Local experiment registry.
+- Run index over `runs/`.
+- Search/list command for past runs.
+- Compare command improvements.
+- Better metadata normalization.
+- Better report linking.
+- Optional export bundle for sharing results.
+- CI workflow if appropriate.
+
+### Expected artifacts
+
+- run index JSON or CSV
+- experiment registry output
+- improved comparison reports
+- documentation for reproducibility workflow
+
+### Exit criteria
+
+- A user can list, inspect, and compare previous runs more easily.
+- Reproducibility story is clear.
+- Tests pass.
+- v0.9.0 tag and release created.
+
+### Non-goals
+
+- No database unless local files become clearly insufficient.
+- No cloud experiment tracker.
+- No SaaS-style productization.
+
+## v1.0.0 - Stable Local Robot Policy Testbed
+
+### Objective
+
+Publish the first stable release of kineForge as a small, serious, reproducible robot policy evaluation testbed.
+
+### v1.0.0 should include
+
+- reliable install path
+- clear quickstart
+- stable CLI commands
+- reproducible training
+- deterministic evaluation
+- scorecards
+- eval matrices
+- config sweeps
+- meaningful gates
+- contact/collision metrics where supported
+- replay/inspection artifacts
+- static reports
+- strong README
+- project doctrine
+- roadmap
+- passing tests
+- clear limitations
+
+### Exit criteria
+
+- New user can clone, install, train, eval, run matrix, run sweep, and inspect artifacts.
+- README is accurate.
+- Tests pass.
+- All core commands work.
+- Example outputs are documented.
+- Limitations are honest.
+- Repository is clean.
+- Human review completed before release.
+- v1.0.0 tag and GitHub Release created manually or with explicit approval.
+
+### Non-goals
+
+- No claim of real robot deployment.
+- No production robotics stack.
+- No cloud platform.
+- No broad benchmark dominance claims.
+- No unnecessary UI.
+
+## Agent Instructions for Roadmap Use
+
+When an agent is asked to work autonomously toward a target version:
+
+1. Read this roadmap.
+2. Identify the target version.
+3. Identify the current released version.
+4. Work through meaningful intermediate improvements if needed.
+5. Commit and push after each verified improvement.
+6. For minor versions, tag and release only after all exit criteria are met.
+7. Do not invent unrelated milestones.
+8. Do not skip exit criteria.
+9. Stop when the target milestone is complete or a defined stop condition is reached.
+
+## Immediate Next Step
+
+The next immediate repository task after v0.4.0 is:
+
+```text
+v0.4.x documentation source-of-truth
+```
+
+This means adding:
+
+- `PROJECT_DOCTRINE.md`
+- `ROADMAP.md`
+- references in `AGENTS.md`
+- references in `README.md`
+
+After that, the project can safely begin autonomous work toward v0.5.0.
