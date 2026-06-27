@@ -77,12 +77,12 @@ The default eval matrix runs baseline, target shift, observation noise, action n
 
 Next planned work:
 
-1. v1.0.0 readiness documentation;
+1. follow the [`V1_READINESS.md`](V1_READINESS.md) checklist before any v1.0.0 tag;
 2. real contact/collision metrics only when the environment can support them honestly;
 3. broader task variants only after evaluation quality improves;
 4. optional richer replay formats if they stay dependency-light.
 
-For contributors and coding agents, see `PROJECT_DOCTRINE.md`, `ROADMAP.md`, and `AGENTS.md`.
+For contributors and coding agents, see `PROJECT_DOCTRINE.md`, `ROADMAP.md`, `V1_READINESS.md`, and `AGENTS.md`.
 
 ## Credits / License
 
