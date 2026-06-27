@@ -7,3 +7,5 @@ __pycache__/
 venv/
 runs/
 .DS_Store
+PROJECT_DOCTRINE.md
+AGENTS.md
