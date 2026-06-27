@@ -1,9 +1,9 @@
 # kineForge Roadmap
 
 Last updated: 2026-06-27
-Current baseline: v0.6.0
+Current baseline: v0.7.0
 
-This roadmap defines the intended direction of kineForge from v0.6.0 to v1.0.0.
+This roadmap defines the intended direction of kineForge from v0.7.0 to v1.0.0.
 
 It is an outcome roadmap, not a step-by-step implementation script.
 
@@ -13,7 +13,7 @@ Agents should use this file together with:
 - `PROJECT_DOCTRINE.md`
 - `README.md`
 
-## Current State: v0.6.0
+## Current State: v0.7.0
 
 kineForge currently provides:
 
@@ -32,6 +32,7 @@ kineForge currently provides:
 - replay indexes
 - matrix summary comparison
 - reproducible results capsule with committed example matrix artifacts
+- static replay gallery generation from matrix artifacts
 - test coverage for core behavior
 
 Current public positioning:
@@ -184,29 +185,26 @@ Make evaluation results easier to inspect visually.
 
 kineForge already writes PNG plots and static reports. The next step is better replay/inspection artifacts so failures are easier to understand.
 
-### Candidate capabilities
+### Delivered capabilities
 
-- Optional video replay.
-- Better trajectory visualizations.
-- Failure annotations in replay outputs.
-- Links from HTML reports to replay artifacts.
-- Replay bundles per eval matrix scenario.
-- Comparison-friendly visual outputs.
+- `replay_gallery.py` CLI for building a static gallery from `matrix_summary.json` and `replay_index.json`.
+- `kineforge.gallery` helpers for deterministic gallery payloads and HTML output.
+- Committed `examples/results/v0.6.0/replay_gallery.html` artifact.
+- Tests for ranked scenario gallery generation and relative image links.
 
 ### Expected artifacts
 
-- optional video files
-- improved PNGs
-- replay index improvements
-- HTML report links
-- tests for artifact generation where feasible
+- static replay gallery HTML
+- existing PNG trajectory plots
+- scorecard and trajectory links per ranked scenario
+- tests for artifact generation
 
 ### Exit criteria
 
 - Replay artifacts are easier to inspect.
 - Existing PNG outputs remain available.
-- New video outputs are optional and dependency-light.
-- Matrix/sweep reports link to relevant artifacts.
+- Gallery output is dependency-light static HTML.
+- Gallery links to relevant scorecards and trajectory plots.
 - v0.7.0 tag and release created.
 
 ### Non-goals
@@ -360,10 +358,10 @@ When an agent is asked to work autonomously toward a target version:
 
 ## Immediate Next Step
 
-The next immediate repository task after v0.6.0 is:
+The next immediate repository task after v0.7.0 is:
 
 ```text
-v0.7.0 replay/showcase artifact layer
+v0.8.0 honest physical/contact metric feasibility
 ```
 
-This means making the committed result artifacts easier to inspect without adding a web app, database, or heavy visualization stack.
+This means inspecting whether contact/collision metrics can be implemented honestly in the current MuJoCo tabletop reach environment before changing reported safety-relevant metrics.

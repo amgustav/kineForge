@@ -11,6 +11,7 @@ import pytest
 from kineforge.config import load_env_configs, load_yaml
 from kineforge.evals import build_scorecard
 from kineforge.gates import load_gate_profile, list_gate_profiles
+from kineforge.gallery import build_replay_gallery, write_replay_gallery_html
 from kineforge.matrix import (
     build_matrix_summary,
     build_replay_index,
@@ -463,6 +464,54 @@ def test_eval_matrix_summary_replay_index_and_comparison(tmp_path):
     assert comparison["gate_delta"]["pass_count"] == 1
     assert comparison["scenarios"]["moved_target"]["summary_delta"]["success_rate"] == pytest.approx(1.0)
 
+
+def test_replay_gallery_uses_ranked_matrix_scenarios(tmp_path):
+    summary = {
+        "timestamp": "20260627-000000",
+        "matrix_preset": "default",
+        "gate_profile": "smoke",
+        "scenario_count": 2,
+        "ranked_scenarios": [
+            {"scenario": "baseline", "rank": 1},
+            {"scenario": "moved_target", "rank": 2},
+        ],
+        "scenarios": {
+            "baseline": {
+                "gate_status": "PASS",
+                "failure_modes": [],
+                "description": "No injected failures.",
+                "limitations": [],
+                "scorecard_json": str(tmp_path / "baseline" / "scorecard.json"),
+                "summary": {"success_rate": 1.0, "mean_final_distance": 0.04},
+            },
+            "moved_target": {
+                "gate_status": "FAIL",
+                "failure_modes": ["moved_target"],
+                "description": "Moved target stress.",
+                "limitations": ["documented limitation"],
+                "scorecard_json": str(tmp_path / "moved_target" / "scorecard.json"),
+                "summary": {"success_rate": 0.0, "mean_final_distance": 0.09},
+            },
+        },
+    }
+    replay_index = {
+        "scenarios": {
+            "baseline": {"trajectory_png": str(tmp_path / "baseline" / "trajectory.png")},
+            "moved_target": {"trajectory_png": str(tmp_path / "moved_target" / "trajectory.png")},
+        }
+    }
+    gallery_path = tmp_path / "gallery.html"
+
+    gallery = build_replay_gallery(summary, replay_index, tmp_path)
+    write_replay_gallery_html(gallery_path, summary, replay_index)
+    html = gallery_path.read_text(encoding="utf-8")
+
+    assert gallery["run_id"] == "eval-matrix-20260627-000000"
+    assert [scenario["name"] for scenario in gallery["scenarios"]] == ["baseline", "moved_target"]
+    assert gallery["scenarios"][0]["trajectory_png"] == "baseline/trajectory.png"
+    assert "kineForge replay gallery" in html
+    assert 'src="moved_target/trajectory.png"' in html
+    assert "documented limitation" in html
 
 def test_scorecard_structure_includes_gate_thresholds_and_episode_results():
     episode_results = [

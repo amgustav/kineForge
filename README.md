@@ -38,6 +38,7 @@ Useful discovery commands:
 python eval.py --list-gates
 python eval_matrix.py --list-presets
 python sweep.py --list-presets
+python replay_gallery.py --summary examples/results/v0.6.0/matrix_summary.json --replay-index examples/results/v0.6.0/replay_index.json --output examples/results/v0.6.0/replay_gallery.html
 ```
 
 ## What it produces
@@ -47,7 +48,7 @@ All outputs are local under `runs/`.
 - `runs/latest/` — latest policy, scorecard, metadata, config snapshot, and replay plots.
 - `runs/train-*/` — timestamped training policy and training metadata.
 - `runs/eval-*/` — one policy evaluation with `scorecard.json`, metadata, config snapshot, and PNG plots.
-- `runs/eval-matrix-*/` — scenario scorecards plus `matrix_summary.json`, `summary.csv`, `report.html`, and replay index.
+- `runs/eval-matrix-*/` — scenario scorecards plus `matrix_summary.json`, `summary.csv`, `report.html`, replay index, and optional replay gallery HTML.
 - `runs/sweep-*/` — one trained/evaluated policy per variant plus `sweep_summary.json`, `summary.csv`, and `sweep_report.html`.
 
 Scorecards report success rate, final distance, timeout rate, reward, gate status, failed gate criteria, and the active failure modes.
@@ -59,7 +60,7 @@ Scorecards report success rate, final distance, timeout rate, reward, gate statu
 - RL algorithm: Stable-Baselines3 PPO.
 - Robot/task: one 2-DoF Reacher-style arm on a tabletop reach-to-target task.
 - Configs: YAML for robot, task, reward, failures, gate profiles, matrix presets, and sweep presets.
-- Evaluation: deterministic policy rollout, JSON scorecard, static HTML/CSV reports, and matplotlib replay plots.
+- Evaluation: deterministic policy rollout, JSON scorecard, static HTML/CSV reports, replay gallery, and matplotlib replay plots.
 
 The default eval matrix runs baseline, target shift, observation noise, action noise, weak actuator combinations, and documented friction placeholders. Gate profiles live in `configs/gates/`; `standard` is the default, `strict` is tighter, and `smoke` is permissive for artifact checks.
 
@@ -75,8 +76,8 @@ The default eval matrix runs baseline, target shift, observation noise, action n
 
 Next planned work:
 
-1. real contact/collision metrics;
-2. better replay and visual inspection;
+1. better replay and visual inspection;
+2. real contact/collision metrics when the environment can support them honestly;
 3. broader task variants only after evaluation quality improves;
 4. local experiment indexing and reproducibility polish.
 

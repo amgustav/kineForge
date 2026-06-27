@@ -11,6 +11,7 @@ Committed example artifacts live in [`examples/results/v0.6.0/`](examples/result
 - `matrix_summary.json` — machine-readable aggregate and per-scenario metrics.
 - `summary.csv` — ranked scenario table.
 - `report.html` — static local report.
+- `replay_gallery.html` — static visual gallery linking ranked scenarios to trajectory plots and scorecards.
 - `replay_index.json` — replay artifact index.
 - `scenarios/*/scorecard.json` — per-scenario scorecards.
 - `scenarios/*/trajectory.png` — selected replay plots.
@@ -37,6 +38,12 @@ Run the eval matrix:
 
 ```bash
 python eval_matrix.py --policy runs/latest/policy.zip --preset default --gate standard --episodes 3 --seed 1
+```
+
+Build or refresh the replay gallery:
+
+```bash
+python replay_gallery.py --summary examples/results/v0.6.0/matrix_summary.json --replay-index examples/results/v0.6.0/replay_index.json --output examples/results/v0.6.0/replay_gallery.html
 ```
 
 The committed capsule was generated with:
@@ -81,7 +88,7 @@ Ranked scenarios:
 
 - The train/eval loop runs end to end on the default tabletop reach task.
 - A locally trained PPO policy can be evaluated deterministically across the default matrix preset.
-- kineForge writes reproducible local artifacts: scorecards, matrix summary, CSV, HTML report, replay index, and trajectory plots.
+- kineForge writes reproducible local artifacts: scorecards, matrix summary, CSV, HTML report, replay index, replay gallery, and trajectory plots.
 - Gate profiles are applied and recorded in the scorecards and matrix summary.
 
 ## What this does not prove

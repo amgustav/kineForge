@@ -19,9 +19,17 @@ Contents:
 - `matrix_summary.json` — aggregate and per-scenario metrics.
 - `summary.csv` — ranked scenario table.
 - `report.html` — static report generated from the committed summary and replay index.
+- `replay_gallery.html` — static visual gallery generated from the matrix summary and replay index.
 - `replay_index.json` — paths to committed trajectory plots.
 - `scenarios/*/scorecard.json` — per-scenario scorecards.
 - `scenarios/*/trajectory.png` — selected replay trajectories.
+
+
+Refresh the gallery with:
+
+```bash
+python replay_gallery.py --summary examples/results/v0.6.0/matrix_summary.json --replay-index examples/results/v0.6.0/replay_index.json --output examples/results/v0.6.0/replay_gallery.html
+```
 
 Limitations:
 

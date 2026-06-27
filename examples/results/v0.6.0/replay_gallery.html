@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>kineForge replay gallery - eval-matrix-20260627-111404</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 2rem; color: #17202a; }
+    .summary { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card { border: 1px solid #d0d7de; border-radius: 0.5rem; padding: 1rem; background: #fff; }
+    .card h2 { margin-top: 0; }
+    img { max-width: 100%; border: 1px solid #d0d7de; }
+    .limitations { color: #57606a; font-size: 0.92rem; }
+    code { background: #f6f8fa; padding: 0.1rem 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>kineForge replay gallery</h1>
+  <dl class="summary">
+    <dt>run</dt><dd><code>eval-matrix-20260627-111404</code></dd>
+    <dt>matrix preset</dt><dd><code>default</code></dd>
+    <dt>gate profile</dt><dd><code>standard</code></dd>
+    <dt>scenarios</dt><dd>7</dd>
+  </dl>
+  <section class="grid">
+    <article class="card"><h2>observation_noise</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0399 m</p><p><strong>Failures:</strong> noisy_observation</p><p>Adds configured Gaussian noise to observations during eval.</p><p class="limitations"></p><a href="scenarios/observation_noise/trajectory.png"><img src="scenarios/observation_noise/trajectory.png" alt="observation_noise trajectory"></a><p><a href="scenarios/observation_noise/scorecard.json">scorecard</a></p></article><article class="card"><h2>baseline</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0439 m</p><p><strong>Failures:</strong> none</p><p>No injected evaluation failures.</p><p class="limitations"></p><a href="scenarios/baseline/trajectory.png"><img src="scenarios/baseline/trajectory.png" alt="baseline trajectory"></a><p><a href="scenarios/baseline/scorecard.json">scorecard</a></p></article><article class="card"><h2>high_friction</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0439 m</p><p><strong>Failures:</strong> high_friction</p><p>Placeholder for higher table/contact friction.</p><p class="limitations">The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so high_friction is documented but not physically modeled yet.</p><a href="scenarios/high_friction/trajectory.png"><img src="scenarios/high_friction/trajectory.png" alt="high_friction trajectory"></a><p><a href="scenarios/high_friction/scorecard.json">scorecard</a></p></article><article class="card"><h2>low_friction</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0439 m</p><p><strong>Failures:</strong> low_friction</p><p>Placeholder for lower table/contact friction.</p><p class="limitations">The current tabletop reach task uses kinematic joint-delta control and no contact-dependent object dynamics, so low_friction is documented but not physically modeled yet.</p><a href="scenarios/low_friction/trajectory.png"><img src="scenarios/low_friction/trajectory.png" alt="low_friction trajectory"></a><p><a href="scenarios/low_friction/scorecard.json">scorecard</a></p></article><article class="card"><h2>action_noise</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0463 m</p><p><strong>Failures:</strong> action_noise</p><p>Adds configured Gaussian perturbation to policy actions during eval.</p><p class="limitations"></p><a href="scenarios/action_noise/trajectory.png"><img src="scenarios/action_noise/trajectory.png" alt="action_noise trajectory"></a><p><a href="scenarios/action_noise/scorecard.json">scorecard</a></p></article><article class="card"><h2>combined_hard</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0480 m</p><p><strong>Failures:</strong> action_noise, moved_target, noisy_observation, weak_actuator</p><p>Combines target shift, observation noise, action noise, and weak actuator effects.</p><p class="limitations">Excludes low_friction and high_friction because friction is not physically modeled in v0.</p><a href="scenarios/combined_hard/trajectory.png"><img src="scenarios/combined_hard/trajectory.png" alt="combined_hard trajectory"></a><p><a href="scenarios/combined_hard/scorecard.json">scorecard</a></p></article><article class="card"><h2>target_shift</h2><p><strong>Gate:</strong> PASS</p><p><strong>Success rate:</strong> 1.000</p><p><strong>Mean final distance:</strong> 0.0495 m</p><p><strong>Failures:</strong> moved_target</p><p>Moves the target by the configured offset before each eval episode.</p><p class="limitations"></p><a href="scenarios/target_shift/trajectory.png"><img src="scenarios/target_shift/trajectory.png" alt="target_shift trajectory"></a><p><a href="scenarios/target_shift/scorecard.json">scorecard</a></p></article>
+  </section>
+</body>
+</html>
