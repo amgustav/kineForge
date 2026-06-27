@@ -51,7 +51,7 @@ All outputs are local under `runs/`.
 - `runs/eval-matrix-*/` — scenario scorecards plus `matrix_summary.json`, `summary.csv`, `report.html`, replay index, and optional replay gallery HTML.
 - `runs/sweep-*/` — one trained/evaluated policy per variant plus `sweep_summary.json`, `summary.csv`, and `sweep_report.html`.
 
-Scorecards report success rate, final distance, timeout rate, reward, gate status, failed gate criteria, and the active failure modes.
+Scorecards report success rate, final distance, timeout rate, reward, gate status, failed gate criteria, active failure modes, and explicit metadata for placeholder physical/contact metrics.
 
 ## How it works
 
@@ -66,9 +66,8 @@ The default eval matrix runs baseline, target shift, observation noise, action n
 
 ## Current limitations
 
-- One robot and one tabletop reaching task.
-- Collision/contact metrics are still placeholders.
-- Friction failure modes are documented but not physically modeled yet.
+- Collision/contact metrics are retained as explicit unmeasured placeholders in the current kinematic task.
+- Friction failure modes are documented in scorecards as not physically modeled yet.
 - PNG replay only; no video output yet.
 - No real robot deployment, web UI, database, cloud service, or broad benchmark suite.
 
@@ -76,10 +75,10 @@ The default eval matrix runs baseline, target shift, observation noise, action n
 
 Next planned work:
 
-1. better replay and visual inspection;
-2. real contact/collision metrics when the environment can support them honestly;
-3. broader task variants only after evaluation quality improves;
-4. local experiment indexing and reproducibility polish.
+1. local experiment indexing and reproducibility polish;
+2. better replay and visual inspection;
+3. real contact/collision metrics only when the environment can support them honestly;
+4. broader task variants only after evaluation quality improves.
 
 For contributors and coding agents, see `PROJECT_DOCTRINE.md`, `ROADMAP.md`, and `AGENTS.md`.
 

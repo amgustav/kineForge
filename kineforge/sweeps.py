@@ -415,6 +415,8 @@ def build_sweep_summary(
             "gate_profile": scorecard["gate"]["profile"],
             "gate_failed_criteria": list(scorecard["gate"].get("failed_criteria", ())),
             "gate_explanation": scorecard["gate"].get("explanation", ""),
+            "physical_metrics": scorecard.get("physical_metrics", {}),
+            "failure_mode_metadata": scorecard.get("failure_mode_metadata", {}),
             "seed": variant.seed,
             "timesteps": variant.timesteps,
             "episodes": variant.episodes,

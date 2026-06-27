@@ -3,7 +3,7 @@
 Project-specific doctrine for `kineForge`.
 
 Last updated: 2026-06-27
-Current repository baseline: v0.7.0
+Current repository baseline: v0.8.0
 
 This document is the project-specific operating doctrine for kineForge. It supplements the general operating doctrine and applies only to this repository.
 
@@ -76,7 +76,7 @@ Do not frame kineForge as an exposé, manifesto, anti-industry project, or attac
 
 ## 4. Current Baseline
 
-As of v0.7.0, kineForge contains:
+As of v0.8.0, kineForge contains:
 
 - a MuJoCo tabletop reach environment
 - PPO training through Stable-Baselines3
@@ -96,6 +96,7 @@ As of v0.7.0, kineForge contains:
 - tests covering environment behavior, configs, gates, scorecards, matrices, plots, and sweep logic
 - reproducible results capsule with committed example matrix artifacts
 - static replay gallery generation from matrix artifacts
+- explicit physical/contact metric metadata marking current placeholders as unmeasured
 
 The current project is intentionally small:
 

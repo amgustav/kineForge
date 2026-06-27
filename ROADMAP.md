@@ -1,9 +1,9 @@
 # kineForge Roadmap
 
 Last updated: 2026-06-27
-Current baseline: v0.7.0
+Current baseline: v0.8.0
 
-This roadmap defines the intended direction of kineForge from v0.7.0 to v1.0.0.
+This roadmap defines the intended direction of kineForge from v0.8.0 to v1.0.0.
 
 It is an outcome roadmap, not a step-by-step implementation script.
 
@@ -13,7 +13,7 @@ Agents should use this file together with:
 - `PROJECT_DOCTRINE.md`
 - `README.md`
 
-## Current State: v0.7.0
+## Current State: v0.8.0
 
 kineForge currently provides:
 
@@ -33,6 +33,7 @@ kineForge currently provides:
 - matrix summary comparison
 - reproducible results capsule with committed example matrix artifacts
 - static replay gallery generation from matrix artifacts
+- explicit physical/contact metric metadata marking current placeholders as unmeasured
 - test coverage for core behavior
 
 Current public positioning:
@@ -214,46 +215,43 @@ kineForge already writes PNG plots and static reports. The next step is better r
 - No interactive dashboard.
 - No dependency-heavy rendering pipeline unless explicitly justified.
 
-## v0.8.0 - Carefully Broader Tasks and Variants
+## v0.8.0 - Honest Physical Metric Metadata
 
 ### Objective
 
-Expand beyond the single baseline task only if the existing evaluation infrastructure is strong enough.
+Make placeholder physical/contact metrics explicit instead of silently implying safety measurement.
 
 ### Motivation
 
-After configs, gates, metrics, and replay improve, kineForge can start demonstrating breadth without becoming a robot zoo.
+The current MuJoCo tabletop reach task is kinematic and does not yet support meaningful contact/collision safety claims. v0.8.0 improves credibility by recording that limitation directly in scorecards, matrix summaries, and sweep summaries.
 
-### Candidate capabilities
+### Delivered capabilities
 
-- Additional task variant using the same robot.
-- Additional target distributions.
-- More structured domain randomization presets.
-- More meaningful failure combinations.
-- Optional second simple robot embodiment only if it does not bloat architecture.
+- Scorecards include `physical_metrics` with `measured: false` for current collision/contact placeholders.
+- Scorecards include `failure_mode_metadata` for active failure modes, including whether a failure is physically modeled.
+- Matrix and sweep summaries propagate the physical/failure metadata.
+- Tests cover the physical metadata shape and unmodeled friction failure annotations.
 
 ### Expected artifacts
 
-- new task configs
-- new randomization configs
-- new matrix presets
-- comparison reports across variants
-- tests for config/task loading
+- updated scorecards
+- updated matrix summaries
+- updated sweep summaries
+- tests for physical metadata
 
 ### Exit criteria
 
-- At least one meaningful new task or task variant exists.
-- The architecture remains simple.
-- The README still explains the project in 10 seconds.
+- Placeholder contact/collision values are explicitly marked as unmeasured.
+- Unmodeled friction failures are documented in machine-readable scorecard metadata.
 - Tests pass.
 - v0.8.0 tag and release created.
 
 ### Non-goals
 
-- No robot zoo.
-- No humanoid simulator.
-- No complex manipulation suite.
-- No broad benchmark claims.
+- No fake contact/collision implementation.
+- No real-world safety certification claim.
+- No hardware deployment.
+- No robot zoo or broader benchmark claim.
 
 ## v0.9.0 - Experiment Registry and Reproducibility Polish
 
@@ -358,10 +356,10 @@ When an agent is asked to work autonomously toward a target version:
 
 ## Immediate Next Step
 
-The next immediate repository task after v0.7.0 is:
+The next immediate repository task after v0.8.0 is:
 
 ```text
-v0.8.0 honest physical/contact metric feasibility
+v0.9.0 local experiment indexing and reproducibility polish
 ```
 
-This means inspecting whether contact/collision metrics can be implemented honestly in the current MuJoCo tabletop reach environment before changing reported safety-relevant metrics.
+This means making accumulated local `runs/` outputs easier to list, inspect, compare, and reproduce.

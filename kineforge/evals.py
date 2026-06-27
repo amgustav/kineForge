@@ -12,6 +12,45 @@ from kineforge.gates import DEFAULT_GATE_PROFILE, GateProfile, build_gate_result
 from kineforge.envs import TabletopReachEnv
 
 
+def build_failure_mode_metadata(
+    failure_modes: Collection[str],
+    failure_config: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    metadata: dict[str, dict[str, Any]] = {}
+    if failure_config is None:
+        failure_config = {}
+    for failure in sorted(failure_modes):
+        raw_config = failure_config.get(failure, {})
+        if not isinstance(raw_config, dict):
+            raw_config = {}
+        metadata[failure] = {
+            "modeled": bool(raw_config.get("modeled", True)),
+            "limitation": str(raw_config.get("limitation", "")),
+        }
+    return metadata
+
+
+def build_physical_metrics() -> dict[str, Any]:
+    return {
+        "collision_rate": {
+            "value": 0.0,
+            "measured": False,
+            "explanation": (
+                "Contact/collision extraction is not implemented for the current kinematic tabletop reach task; "
+                "collision_rate is retained as 0.0 for backwards-compatible summaries and must not be interpreted "
+                "as a safety metric."
+            ),
+        },
+        "contact_model": {
+            "measured": False,
+            "explanation": (
+                "The current task uses a simple reacher arm and target geometry without contact-dependent tabletop "
+                "object dynamics."
+            ),
+        },
+    }
+
+
 def build_scorecard(
     policy_path: Path,
     robot: str,
@@ -22,12 +61,15 @@ def build_scorecard(
     episode_results: list[dict[str, Any]],
     success_threshold: float,
     gate_profile: GateProfile | str | None = None,
+    failure_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     success_rate = float(np.mean([bool(result["success"]) for result in episode_results]))
     mean_final_distance = float(np.mean([float(result["final_distance"]) for result in episode_results]))
     timeout_rate = float(np.mean([bool(result["timeout"]) for result in episode_results]))
     mean_episode_reward = float(np.mean([float(result["episode_reward"]) for result in episode_results]))
-    collision_rate = 0.0
+    physical_metrics = build_physical_metrics()
+    collision_rate = float(physical_metrics["collision_rate"]["value"])
+    failure_mode_metadata = build_failure_mode_metadata(failure_modes, failure_config)
 
     if gate_profile is None:
         profile = load_gate_profile(DEFAULT_GATE_PROFILE)
@@ -58,12 +100,11 @@ def build_scorecard(
             "mean_episode_reward": mean_episode_reward,
             "collision_rate": collision_rate,
         },
+        "physical_metrics": physical_metrics,
+        "failure_mode_metadata": failure_mode_metadata,
         "gate": gate,
         "per_episode": episode_results,
-        "collision_rate_explanation": (
-            "Collision detection is not implemented in v0.2.0; collision_rate is reported as 0.0 "
-            "and should not be interpreted as a safety metric."
-        ),
+        "collision_rate_explanation": physical_metrics["collision_rate"]["explanation"],
     }
 
 
@@ -158,6 +199,7 @@ def run_evaluation(
         episode_results=episode_results,
         success_threshold=success_threshold,
         gate_profile=gate_profile,
+        failure_config=failure_config,
     )
     env.close()
     assert first_episode_replay is not None

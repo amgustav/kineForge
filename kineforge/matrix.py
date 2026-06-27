@@ -143,6 +143,8 @@ def build_matrix_summary(
             "gate_explanation": scorecard["gate"].get("explanation", ""),
             "scorecard_json": str(result["scorecard_path"]),
             "summary": scorecard["summary"],
+            "physical_metrics": scorecard.get("physical_metrics", {}),
+            "failure_mode_metadata": scorecard.get("failure_mode_metadata", {}),
         }
         if scenario is not None:
             if scenario.description:

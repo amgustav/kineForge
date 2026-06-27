@@ -460,6 +460,8 @@ def test_eval_matrix_summary_replay_index_and_comparison(tmp_path):
     assert before_summary["scenario_count"] == 2
     assert before_summary["gate"]["pass_count"] == 1
     assert before_summary["scenarios"]["moved_target"]["scorecard_json"].endswith("scorecard.json")
+    assert before_summary["scenarios"]["moved_target"]["physical_metrics"]["collision_rate"]["measured"] is False
+    assert before_summary["scenarios"]["moved_target"]["failure_mode_metadata"]["moved_target"]["modeled"] is True
     assert set(replay_index["scenarios"]) == {"baseline", "moved_target"}
     assert comparison["gate_delta"]["pass_count"] == 1
     assert comparison["scenarios"]["moved_target"]["summary_delta"]["success_rate"] == pytest.approx(1.0)
@@ -582,6 +584,24 @@ def test_scorecard_structure_includes_gate_thresholds_and_episode_results():
     assert len(scorecard["per_episode"]) == 2
     assert scorecard["failure_modes"] == ["moved_target"]
     assert "collision_rate_explanation" in scorecard
+    assert scorecard["physical_metrics"]["collision_rate"]["measured"] is False
+    assert "must not be interpreted as a safety metric" in scorecard["collision_rate_explanation"]
+    assert scorecard["failure_mode_metadata"]["moved_target"] == {"modeled": True, "limitation": ""}
+    friction_scorecard = build_scorecard(
+        Path("runs/eval-test/policy.zip"),
+        "arm_v0",
+        "tabletop_reach",
+        "reach_v0",
+        seed=1,
+        failure_modes={"low_friction"},
+        episode_results=episode_results,
+        success_threshold=0.05,
+        failure_config={"low_friction": {"modeled": False, "limitation": "not contact-dependent yet"}},
+    )
+    assert friction_scorecard["failure_mode_metadata"]["low_friction"] == {
+        "modeled": False,
+        "limitation": "not contact-dependent yet",
+    }
 
 
 def test_report_artifact_and_config_snapshot_writers(tmp_path):

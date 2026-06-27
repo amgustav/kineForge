@@ -90,11 +90,12 @@ Ranked scenarios:
 - A locally trained PPO policy can be evaluated deterministically across the default matrix preset.
 - kineForge writes reproducible local artifacts: scorecards, matrix summary, CSV, HTML report, replay index, replay gallery, and trajectory plots.
 - Gate profiles are applied and recorded in the scorecards and matrix summary.
+- v0.8.0 scorecards explicitly mark collision/contact metrics as unmeasured placeholders and record whether active failure modes are physically modeled.
 
 ## What this does not prove
 
 - It does not prove real robot deployment readiness.
 - It does not prove broad task generality; this is one robot and one reaching task.
-- It does not prove collision/contact safety. Collision rate is still a placeholder in v0.6.0.
+- It does not prove collision/contact safety. Collision rate is retained as an explicit unmeasured placeholder for the current kinematic task.
 - It does not prove physically modeled friction effects. `low_friction` and `high_friction` are documented placeholders in the current kinematic task.
 - It does not claim benchmark superiority over other robot learning systems.
