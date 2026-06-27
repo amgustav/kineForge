@@ -34,8 +34,9 @@ from kineforge.sweeps import (
     rank_variant_rows,
 )
 from kineforge.envs import TabletopReachEnv
+from kineforge.registry import build_run_index, write_run_index_csv, write_run_index_json
 from kineforge.replay import save_distance_over_time_png, save_episode_rewards_png
-from kineforge.reports import write_config_snapshot
+from kineforge.reports import write_config_snapshot, write_json
 from kineforge.rewards import compute_reach_reward
 
 
@@ -602,6 +603,53 @@ def test_scorecard_structure_includes_gate_thresholds_and_episode_results():
         "modeled": False,
         "limitation": "not contact-dependent yet",
     }
+
+
+def test_run_index_summarizes_local_artifacts(tmp_path):
+    runs_dir = tmp_path / "runs"
+    matrix_dir = runs_dir / "eval-matrix-20260627-000002"
+    sweep_dir = runs_dir / "sweep-20260627-000001"
+    eval_dir = runs_dir / "eval-20260627-000000"
+    write_json(
+        matrix_dir / "matrix_summary.json",
+        {
+            "timestamp": "20260627-000002",
+            "gate": {"fail_count": 0},
+            "aggregate": {"success_rate": 1.0, "mean_final_distance": 0.04},
+            "scenario_count": 7,
+        },
+    )
+    write_json(
+        sweep_dir / "sweep_summary.json",
+        {
+            "run_id": "sweep-20260627-000001",
+            "timestamp": "20260627-000001",
+            "gate": {"fail_count": 1},
+            "variant_count": 3,
+        },
+    )
+    write_json(
+        eval_dir / "scorecard.json",
+        {
+            "timestamp": "20260627-000000",
+            "gate": {"status": "PASS"},
+            "summary": {"success_rate": 0.5, "mean_final_distance": 0.08},
+        },
+    )
+    index = build_run_index(runs_dir)
+    json_path = tmp_path / "run_index.json"
+    csv_path = tmp_path / "run_index.csv"
+    write_run_index_json(json_path, index)
+    write_run_index_csv(csv_path, index)
+    rows = list(csv.DictReader(csv_path.open("r", encoding="utf-8", newline="")))
+
+    assert index["run_count"] == 3
+    assert [row["kind"] for row in index["runs"]] == ["eval_matrix", "sweep", "eval"]
+    assert index["runs"][0]["scenario_count"] == 7
+    assert index["runs"][1]["gate_status"] == "FAIL"
+    assert json_path.exists()
+    assert rows[0]["run_id"] == "eval-matrix-20260627-000002"
+    assert rows[1]["variant_count"] == "3"
 
 
 def test_report_artifact_and_config_snapshot_writers(tmp_path):

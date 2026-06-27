@@ -91,6 +91,7 @@ Ranked scenarios:
 - kineForge writes reproducible local artifacts: scorecards, matrix summary, CSV, HTML report, replay index, replay gallery, and trajectory plots.
 - Gate profiles are applied and recorded in the scorecards and matrix summary.
 - v0.8.0 scorecards explicitly mark collision/contact metrics as unmeasured placeholders and record whether active failure modes are physically modeled.
+- v0.9.0 adds `run_index.py` for local JSON/CSV indexing of train, eval, matrix, and sweep artifacts.
 
 ## What this does not prove
 

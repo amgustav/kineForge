@@ -39,6 +39,7 @@ python eval.py --list-gates
 python eval_matrix.py --list-presets
 python sweep.py --list-presets
 python replay_gallery.py --summary examples/results/v0.6.0/matrix_summary.json --replay-index examples/results/v0.6.0/replay_index.json --output examples/results/v0.6.0/replay_gallery.html
+python run_index.py --runs-dir runs --output runs/run_index.json --csv runs/run_index.csv
 ```
 
 ## What it produces
@@ -50,6 +51,7 @@ All outputs are local under `runs/`.
 - `runs/eval-*/` — one policy evaluation with `scorecard.json`, metadata, config snapshot, and PNG plots.
 - `runs/eval-matrix-*/` — scenario scorecards plus `matrix_summary.json`, `summary.csv`, `report.html`, replay index, and optional replay gallery HTML.
 - `runs/sweep-*/` — one trained/evaluated policy per variant plus `sweep_summary.json`, `summary.csv`, and `sweep_report.html`.
+- `runs/run_index.json` and `runs/run_index.csv` — local index of train, eval, matrix, and sweep artifacts.
 
 Scorecards report success rate, final distance, timeout rate, reward, gate status, failed gate criteria, active failure modes, and explicit metadata for placeholder physical/contact metrics.
 
@@ -75,10 +77,10 @@ The default eval matrix runs baseline, target shift, observation noise, action n
 
 Next planned work:
 
-1. local experiment indexing and reproducibility polish;
-2. better replay and visual inspection;
-3. real contact/collision metrics only when the environment can support them honestly;
-4. broader task variants only after evaluation quality improves.
+1. v1.0.0 readiness documentation;
+2. real contact/collision metrics only when the environment can support them honestly;
+3. broader task variants only after evaluation quality improves;
+4. optional richer replay formats if they stay dependency-light.
 
 For contributors and coding agents, see `PROJECT_DOCTRINE.md`, `ROADMAP.md`, and `AGENTS.md`.
 

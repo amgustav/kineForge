@@ -1,9 +1,9 @@
 # kineForge Roadmap
 
 Last updated: 2026-06-27
-Current baseline: v0.8.0
+Current baseline: v0.9.0
 
-This roadmap defines the intended direction of kineForge from v0.8.0 to v1.0.0.
+This roadmap defines the intended direction of kineForge from v0.9.0 to v1.0.0.
 
 It is an outcome roadmap, not a step-by-step implementation script.
 
@@ -13,7 +13,7 @@ Agents should use this file together with:
 - `PROJECT_DOCTRINE.md`
 - `README.md`
 
-## Current State: v0.8.0
+## Current State: v0.9.0
 
 kineForge currently provides:
 
@@ -34,6 +34,7 @@ kineForge currently provides:
 - reproducible results capsule with committed example matrix artifacts
 - static replay gallery generation from matrix artifacts
 - explicit physical/contact metric metadata marking current placeholders as unmeasured
+- local run index JSON/CSV generation for train, eval, matrix, and sweep artifacts
 - test coverage for core behavior
 
 Current public positioning:
@@ -263,28 +264,23 @@ Make accumulated experiment outputs easier to track, compare, and reproduce.
 
 As matrix runs and sweeps accumulate, the project needs a cleaner local experiment index.
 
-### Candidate capabilities
+### Delivered capabilities
 
-- Local experiment registry.
-- Run index over `runs/`.
-- Search/list command for past runs.
-- Compare command improvements.
-- Better metadata normalization.
-- Better report linking.
-- Optional export bundle for sharing results.
-- CI workflow if appropriate.
+- `run_index.py` CLI for indexing local `runs/` artifacts.
+- `kineforge.registry` helpers for summarizing train, eval, matrix, and sweep directories.
+- `run_index.json` and `run_index.csv` outputs.
+- Tests for registry summaries and CSV output.
 
 ### Expected artifacts
 
-- run index JSON or CSV
-- experiment registry output
-- improved comparison reports
+- run index JSON
+- run index CSV
 - documentation for reproducibility workflow
 
 ### Exit criteria
 
-- A user can list, inspect, and compare previous runs more easily.
-- Reproducibility story is clear.
+- A user can list previous runs through `run_index.py`.
+- Reproducibility story is clear enough for local artifacts.
 - Tests pass.
 - v0.9.0 tag and release created.
 
@@ -356,10 +352,10 @@ When an agent is asked to work autonomously toward a target version:
 
 ## Immediate Next Step
 
-The next immediate repository task after v0.8.0 is:
+The next immediate repository task after v0.9.0 is:
 
 ```text
-v0.9.0 local experiment indexing and reproducibility polish
+v1.0.0 readiness report
 ```
 
-This means making accumulated local `runs/` outputs easier to list, inspect, compare, and reproduce.
+This means documenting the current stable surface, remaining limitations, and whether kineForge is ready for a v1.0.0 release without inventing new milestone scope.
