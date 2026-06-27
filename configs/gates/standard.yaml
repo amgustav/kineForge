@@ -1,0 +1,6 @@
+name: standard
+description: Backwards-compatible default evaluation gate.
+thresholds:
+  min_success_rate: 0.8
+  max_mean_final_distance: task_success_threshold
+  max_timeout_rate: 0.3

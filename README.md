@@ -57,10 +57,10 @@ Stress-test it with failure modes:
 python eval.py --policy runs/latest/policy.zip --failures moved_target,noisy_observation,weak_actuator --seed 1
 ```
 
-Run the default eval matrix. This evaluates the same policy in `baseline`, `target_shift`, `low_friction`, `high_friction`, `observation_noise`, `action_noise`, and `combined_hard` scenarios:
+Run the default eval matrix preset. This evaluates the same policy in `baseline`, `target_shift`, `low_friction`, `high_friction`, `observation_noise`, `action_noise`, and `combined_hard` scenarios:
 
 ```bash
-python eval_matrix.py --policy runs/latest/policy.zip --seed 1
+python eval_matrix.py --policy runs/latest/policy.zip --preset default --seed 1
 ```
 
 Run a custom named eval matrix:
@@ -69,13 +69,19 @@ Run a custom named eval matrix:
 python eval_matrix.py --policy runs/latest/policy.zip --scenario baseline= --scenario target_shift=moved_target --scenario observation_noise=noisy_observation --scenario action_noise=action_noise --scenario combined_hard=moved_target,noisy_observation,action_noise,weak_actuator --seed 1
 ```
 
+List available matrix presets and gate profiles:
+
+```bash
+python eval_matrix.py --list-presets
+```
+
 Compare two eval matrix summaries:
 
 ```bash
 python compare_eval.py --before runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --after runs/eval-matrix-YYYYMMDD-HHMMSS/matrix_summary.json --output runs/matrix_comparison.json
 ```
 
-Current status: kineForge has the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, JSON scorecards, trajectory PNGs, timestamped runs, explicit seeds, metadata, config snapshots, eval matrices, config sweeps, replay indexes, and matrix/sweep summary reports.
+Current status: kineForge has the MuJoCo tabletop reach environment, PPO training, YAML configs, deterministic eval, named gate profiles, JSON scorecards, trajectory PNGs, timestamped runs, explicit seeds, metadata, config snapshots, configurable eval matrix presets, configurable config sweep presets, replay indexes, and matrix/sweep summary reports.
 
 Outputs:
 
@@ -146,11 +152,12 @@ runs/
 | **Task**            | tabletop reach-to-target                                     |
 | **Training**        | PPO from scratch via Stable-Baselines3                       |
 | **Environment API** | Gymnasium                                                    |
-| **Configs**         | YAML robot, task, reward, randomization, and failure configs |
+| **Configs**         | YAML robot, task, reward, gate, randomization, failure, matrix, and sweep configs |
 | **Failure modes**   | moved target, noisy observation, action noise, weak actuator; low/high friction are documented matrix placeholders |
-| **Eval output**     | JSON scorecards, matrix summaries, replay indexes, and eval metadata |
+| **Gate profiles**   | standard, strict, and smoke profiles in `configs/gates/` |
+| **Eval output**     | JSON scorecards, matrix/sweep summaries, replay indexes, HTML reports, CSVs, and eval metadata |
 | **Replay output**   | matplotlib trajectory, distance, and reward PNGs             |
-| **Tests**           | smoke tests for env behavior, configs, scorecards, matrices, and plots |
+| **Tests**           | smoke tests for env behavior, configs, gates, scorecards, matrices, sweeps, and plots |
 
 A short `1000` timestep run is a smoke test. It proves the pipeline works; the `25000` timestep command is the recommended local run expected to pass normal no-failure eval.
 
@@ -163,6 +170,8 @@ Evaluation writes a machine-readable scorecard with:
 * `summary`: success rate, mean final distance, timeout rate, mean episode reward, and collision rate.
 * `gate.status`: `PASS` only when all gate criteria pass.
 * `gate.thresholds`: min success rate, max mean final distance, and max timeout rate.
+* `gate.profile`: named gate profile used for the evaluation.
+* `gate.explanation`: plain-language PASS/FAIL explanation listing failed criteria.
 * `per_episode`: seed, success, timeout, final distance, episode reward, step count, target/final positions, and active failures for each episode.
 * `failure_modes`: sorted failure modes active during evaluation.
 * `artifacts`: paths to the policy snapshot, scorecard, metadata, config snapshot, and PNG plots.
@@ -175,13 +184,27 @@ The eval gate separates two different things:
 
 A failed gate after short training means the policy did not pass yet, not that the repo is broken.
 
+Available gate profiles live in `configs/gates/`:
+
+* `standard` — backwards-compatible default gate.
+* `strict` — stricter success, distance, and timeout thresholds for stronger policy comparisons.
+* `smoke` — permissive gate for CLI smoke runs and artifact verification.
+
+Use a gate profile with eval, matrix, or sweep commands:
+
+```bash
+python eval.py --policy runs/latest/policy.zip --gate strict --seed 1
+python eval_matrix.py --policy runs/latest/policy.zip --preset default --gate strict --seed 1
+python sweep.py --preset default --timesteps 1000 --seed 1 --gate strict
+```
+
 ---
 
 ## Eval matrix
 
-`eval_matrix.py` runs one policy snapshot across multiple named scenarios. Each scenario uses the same robot, task, reward config, seed, and episode count, with only the scenario failure set changing.
+`eval_matrix.py` runs one policy snapshot across multiple named scenarios from a YAML preset. Each scenario uses the same robot, task, reward config, seed, gate profile, and episode count, with only the scenario failure set changing.
 
-Scenario syntax is `name=failure_a,failure_b`. Use `name=` for a no-failure scenario. If no scenarios are provided, the default matrix runs:
+Preset configs live in `configs/eval_matrices/`. If no custom `--scenario` values are provided, `--preset default` runs:
 
 * `baseline=` — no injected failures.
 * `target_shift=moved_target` — moved target offset.
@@ -195,15 +218,15 @@ Each matrix run writes:
 
 * one scenario directory per scenario under `scenarios/<name>/`;
 * one `scorecard.json` per scenario;
-* one aggregate `matrix_summary.json`;
+* one aggregate `matrix_summary.json` with ranked scenarios;
 * one `replay_index.json` mapping scenario names to replay PNG artifacts that were written;
-* one static `report.html` for local inspection;
+* one static `report.html` for local inspection, including gate explanations;
 * one `summary.csv` for spreadsheet, CLI, or downstream analysis.
 
 Open the static matrix report locally after a run:
 
 ```bash
-python eval_matrix.py --policy runs/latest/policy.zip --seed 1
+python eval_matrix.py --policy runs/latest/policy.zip --preset default --seed 1
 open runs/eval-matrix-YYYYMMDD-HHMMSS/report.html
 ```
 
@@ -220,7 +243,7 @@ runs/eval-matrix-YYYYMMDD-HHMMSS/
       scorecard.json
 ```
 
-`report.html` is a dependency-free local summary for quick inspection. `summary.csv` has one row per scenario and can be opened in a spreadsheet, inspected with command-line tools, or imported into downstream analysis.
+`report.html` is a dependency-free local summary for quick inspection. `summary.csv` has one ranked row per scenario and can be opened in a spreadsheet, inspected with command-line tools, or imported into downstream analysis.
 
 `compare_eval.py` compares two `matrix_summary.json` files and reports aggregate and per-scenario metric deltas.
 
@@ -228,10 +251,11 @@ runs/eval-matrix-YYYYMMDD-HHMMSS/
 
 ## Config sweeps
 
-`sweep.py` trains and evaluates multiple named task/reward config variants from one YAML file, then ranks them by gate status, success rate, and mean final distance.
+`sweep.py` trains and evaluates multiple named task/reward config variants from one YAML preset, then ranks them by gate status, success rate, and mean final distance.
 
 ```bash
-python sweep.py --config configs/sweeps/default.yaml --timesteps 1000 --seed 1
+python sweep.py --preset default --timesteps 1000 --seed 1
+python sweep.py --list-presets
 ```
 
 Each sweep writes one timestamped output directory:
@@ -249,7 +273,7 @@ runs/sweep-YYYYMMDD-HHMMSS/
       config_snapshot.yaml
 ```
 
-Use `sweep_summary.json` for machine-readable ranking, `summary.csv` for spreadsheet/CLI inspection, and `sweep_report.html` for a dependency-free local report.
+Use `sweep_summary.json` for machine-readable ranking, `summary.csv` for spreadsheet/CLI inspection, and `sweep_report.html` for a dependency-free local report with gate explanations.
 
 ---
 
@@ -262,7 +286,7 @@ Observations include joint state, end-effector position, target position, and th
 
 Training is handled by `train.py` using Stable-Baselines3 PPO.
 
-Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot. Eval matrices are handled by `eval_matrix.py`, config sweeps by `sweep.py`, and summary comparison by `compare_eval.py`.
+Evaluation is handled by `eval.py`, which snapshots the policy, can inject configured failures, apply named gate profiles, then writes a scorecard, metadata, config snapshot, trajectory plot, distance plot, and episode reward plot. Eval matrices are handled by `eval_matrix.py`, config sweeps by `sweep.py`, and summary comparison by `compare_eval.py`.
 
 Reward terms are loaded from YAML and include distance-to-target, progress shaping, success bonus, control penalty, and timeout penalty.
 
@@ -272,7 +296,11 @@ Reward terms are loaded from YAML and include distance-to-target, progress shapi
 
 ```text
 configs/
+  eval_matrices/default.yaml
   failures/basic_failures.yaml
+  gates/smoke.yaml
+  gates/standard.yaml
+  gates/strict.yaml
   rewards/reach_v0.yaml
   robots/arm_v0.yaml
   sweeps/default.yaml
@@ -281,6 +309,7 @@ kineforge/
   envs/tabletop_reach_env.py
   config.py
   evals.py
+  gates.py
   eval_artifacts.py
   randomization.py
   matrix.py
@@ -317,11 +346,9 @@ sweep.py
 
 Next experiment-quality steps:
 
-* configurable sweep presets
-* configurable matrix presets
-* stricter eval gates
 * real collision/contact metrics
 * optional video replay
+* broader task variants after evaluation quality improves
 
 ---
 

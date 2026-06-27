@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from kineforge.gates import list_gate_profiles
 from kineforge.eval_artifacts import write_eval_artifacts
 from kineforge.matrix import parse_failures
 from kineforge.reports import copy_file, prepare_run_dir, reset_latest_dir, timestamp
@@ -17,11 +18,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reward", default="reach_v0")
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--gate", default="standard", help="Gate profile name from configs/gates.")
+    parser.add_argument("--list-gates", action="store_true", help="List gate profiles, then exit.")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.list_gates:
+        print("Gate profiles:")
+        for profile in list_gate_profiles():
+            print(f"  {profile}")
+        return
     active_failures = parse_failures(args.failures)
     run_timestamp = timestamp()
     eval_dir = prepare_run_dir("eval", run_timestamp)
@@ -46,6 +54,7 @@ def main() -> None:
         episodes=args.episodes,
         seed=args.seed,
         run_timestamp=run_timestamp,
+        gate_profile=args.gate,
     )
     scorecard = result["scorecard"]
     scorecard_path = result["scorecard_path"]
@@ -70,6 +79,8 @@ def main() -> None:
         copy_file(eval_train_metadata, latest_dir / "train_metadata.json")
 
     print(f"Gate status: {scorecard['gate']['status']}")
+    print(f"Gate profile: {scorecard['gate']['profile']}")
+    print(f"Gate explanation: {scorecard['gate']['explanation']}")
     print(f"Scorecard: {scorecard_path}")
     print(f"Eval metadata: {eval_metadata_path}")
     print(f"Trajectory PNG: {trajectory_path}")

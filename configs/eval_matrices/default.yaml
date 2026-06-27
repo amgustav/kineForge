@@ -1,3 +1,6 @@
+name: default
+description: Default eval matrix covering baseline and supported v0 failure modes.
+gate_profile: standard
 scenarios:
   - name: baseline
     failures: []

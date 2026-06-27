@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from kineforge.config import load_named_config
+from kineforge.config import load_named_config, project_root
 
 from kineforge.reports import write_json
 
@@ -35,6 +35,14 @@ class EvalScenario:
     description: str = ""
     limitations: tuple[str, ...] = ()
 
+
+@dataclass(frozen=True)
+class MatrixPreset:
+    name: str
+    description: str
+    gate_profile: str
+    scenarios: tuple[EvalScenario, ...]
+
 def parse_failures(raw_failures: str) -> set[str]:
     return {failure.strip() for failure in raw_failures.split(",") if failure.strip()}
 
@@ -53,6 +61,8 @@ def parse_scenario(raw_scenario: str) -> EvalScenario:
 
 
 def scenario_from_config(raw_scenario: Mapping[str, Any]) -> EvalScenario:
+    if not isinstance(raw_scenario, Mapping):
+        raise ValueError("matrix scenario entries must be mappings")
     name = str(raw_scenario["name"]).strip()
     if not name:
         raise ValueError("scenario name cannot be empty")
@@ -68,9 +78,26 @@ def scenario_from_config(raw_scenario: Mapping[str, Any]) -> EvalScenario:
     )
 
 
+def list_matrix_presets() -> list[str]:
+    preset_dir = project_root() / "configs" / "eval_matrices"
+    return sorted(path.stem for path in preset_dir.glob("*.yaml") if path.is_file())
+
+
+def load_matrix_preset(name: str = DEFAULT_MATRIX_CONFIG) -> MatrixPreset:
+    preset_name = str(name).strip() or DEFAULT_MATRIX_CONFIG
+    payload = load_named_config("eval_matrices", preset_name)
+    raw_scenarios = payload.get("scenarios", ())
+    scenarios = validate_scenarios([scenario_from_config(raw_scenario) for raw_scenario in raw_scenarios])
+    return MatrixPreset(
+        name=str(payload.get("name", preset_name)).strip() or preset_name,
+        description=str(payload.get("description", "")),
+        gate_profile=str(payload.get("gate_profile", "standard")),
+        scenarios=tuple(scenarios),
+    )
+
+
 def load_default_scenarios() -> list[EvalScenario]:
-    payload = load_named_config("eval_matrices", DEFAULT_MATRIX_CONFIG)
-    return [scenario_from_config(raw_scenario) for raw_scenario in payload["scenarios"]]
+    return list(load_matrix_preset(DEFAULT_MATRIX_CONFIG).scenarios)
 
 
 def validate_scenarios(scenarios: list[EvalScenario]) -> list[EvalScenario]:
@@ -83,9 +110,9 @@ def validate_scenarios(scenarios: list[EvalScenario]) -> list[EvalScenario]:
     return scenarios
 
 
-def parse_scenarios(raw_scenarios: Iterable[str] | None) -> list[EvalScenario]:
+def parse_scenarios(raw_scenarios: Iterable[str] | None, preset_name: str = DEFAULT_MATRIX_CONFIG) -> list[EvalScenario]:
     if raw_scenarios is None:
-        return validate_scenarios(load_default_scenarios())
+        return validate_scenarios(list(load_matrix_preset(preset_name).scenarios))
     return validate_scenarios([parse_scenario(raw) for raw in raw_scenarios])
 
 
@@ -102,6 +129,8 @@ def build_matrix_summary(
     episodes: int,
     run_timestamp: str,
     scenario_results: Mapping[str, Mapping[str, Any]],
+    matrix_preset: str = DEFAULT_MATRIX_CONFIG,
+    gate_profile: str = "standard",
 ) -> dict[str, Any]:
     scenarios: dict[str, Any] = {}
     for name, result in scenario_results.items():
@@ -110,6 +139,8 @@ def build_matrix_summary(
         scenario_summary = {
             "failure_modes": scorecard["failure_modes"],
             "gate_status": scorecard["gate"]["status"],
+            "gate_failed_criteria": list(scorecard["gate"].get("failed_criteria", ())),
+            "gate_explanation": scorecard["gate"].get("explanation", ""),
             "scorecard_json": str(result["scorecard_path"]),
             "summary": scorecard["summary"],
         }
@@ -126,6 +157,17 @@ def build_matrix_summary(
         metric: _mean([float(scenario["summary"][metric]) for scenario in scenario_values])
         for metric in SUMMARY_METRICS
     }
+    ranked_scenarios = rank_scenario_rows(
+        [
+            {
+                "scenario": name,
+                "gate_status": scenario["gate_status"],
+                "success_rate": scenario["summary"]["success_rate"],
+                "mean_final_distance": scenario["summary"]["mean_final_distance"],
+            }
+            for name, scenario in scenarios.items()
+        ]
+    )
     return {
         "timestamp": run_timestamp,
         "policy_path": str(policy_path),
@@ -134,6 +176,8 @@ def build_matrix_summary(
         "reward": reward,
         "seed": int(seed),
         "episodes_per_scenario": int(episodes),
+        "matrix_preset": matrix_preset,
+        "gate_profile": gate_profile,
         "scenario_count": len(scenario_values),
         "gate": {
             "pass_count": int(pass_count),
@@ -141,6 +185,8 @@ def build_matrix_summary(
             "pass_rate": float(pass_count / len(scenario_values)) if scenario_values else 0.0,
         },
         "aggregate": aggregate,
+        "ranking": ["gate_status", "success_rate desc", "mean_final_distance asc"],
+        "ranked_scenarios": ranked_scenarios,
         "scenarios": scenarios,
     }
 
@@ -162,6 +208,18 @@ def _overall_gate(summary: Mapping[str, Any]) -> str:
     return "PASS" if int(summary["gate"]["fail_count"]) == 0 else "FAIL"
 
 
+def _rank_key(row: Mapping[str, Any]) -> tuple[int, float, float, str]:
+    gate_rank = 0 if row["gate_status"] == "PASS" else 1
+    return (gate_rank, -float(row["success_rate"]), float(row["mean_final_distance"]), str(row["scenario"]))
+
+
+def rank_scenario_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ranked_rows = [dict(row) for row in sorted(rows, key=_rank_key)]
+    for index, row in enumerate(ranked_rows, start=1):
+        row["rank"] = index
+    return ranked_rows
+
+
 def _run_id(summary: Mapping[str, Any]) -> str:
     return f"eval-matrix-{summary['timestamp']}"
 
@@ -177,6 +235,20 @@ def _scenario_limitations(scenario: Mapping[str, Any]) -> str:
 def _scenario_replay_path(name: str, replay_index: Mapping[str, Any]) -> str:
     replay_artifacts = replay_index.get("scenarios", {}).get(name, {})
     return str(replay_artifacts.get("trajectory_png", ""))
+
+
+def _ranked_scenario_names(summary: Mapping[str, Any]) -> list[str]:
+    ranked = summary.get("ranked_scenarios")
+    if not ranked:
+        return list(summary["scenarios"].keys())
+    return [str(row["scenario"]) for row in ranked]
+
+
+def _scenario_rank(summary: Mapping[str, Any], name: str) -> Any:
+    for row in summary.get("ranked_scenarios", ()):
+        if row["scenario"] == name:
+            return row["rank"]
+    return ""
 
 
 def _relative_report_link(path_value: str, output_dir: Path) -> str:
@@ -197,11 +269,14 @@ def write_matrix_summary_csv(path: Path, summary: Mapping[str, Any], replay_inde
         "policy_path",
         "scenario_count",
         "overall_gate",
+        "rank",
         "scenario",
         "success_rate",
+        "mean_final_distance",
         "collision_rate",
         "unsafe_action_rate",
         "gate",
+        "failed_criteria",
         "description",
         "limitation",
         "scorecard_path",
@@ -210,18 +285,22 @@ def write_matrix_summary_csv(path: Path, summary: Mapping[str, Any], replay_inde
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        for name, scenario in summary["scenarios"].items():
+        for name in _ranked_scenario_names(summary):
+            scenario = summary["scenarios"][name]
             writer.writerow(
                 {
                     "run_id": _run_id(summary),
                     "policy_path": summary["policy_path"],
                     "scenario_count": summary["scenario_count"],
                     "overall_gate": _overall_gate(summary),
+                    "rank": _scenario_rank(summary, name),
                     "scenario": name,
                     "success_rate": _scenario_metric(scenario, "success_rate"),
+                    "mean_final_distance": _scenario_metric(scenario, "mean_final_distance"),
                     "collision_rate": _scenario_metric(scenario, "collision_rate"),
                     "unsafe_action_rate": _scenario_metric(scenario, "unsafe_action_rate"),
                     "gate": scenario["gate_status"],
+                    "failed_criteria": ",".join(scenario.get("gate_failed_criteria", ())),
                     "description": scenario.get("description", ""),
                     "limitation": _scenario_limitations(scenario),
                     "scorecard_path": scenario["scorecard_json"],
@@ -233,7 +312,8 @@ def write_matrix_summary_csv(path: Path, summary: Mapping[str, Any], replay_inde
 def write_matrix_report_html(path: Path, summary: Mapping[str, Any], replay_index: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     rows = []
-    for name, scenario in summary["scenarios"].items():
+    for name in _ranked_scenario_names(summary):
+        scenario = summary["scenarios"][name]
         scorecard_path = str(scenario["scorecard_json"])
         replay_path = _scenario_replay_path(name, replay_index)
         scorecard_link = _relative_report_link(scorecard_path, path.parent)
@@ -241,11 +321,15 @@ def write_matrix_report_html(path: Path, summary: Mapping[str, Any], replay_inde
         replay_cell = f'<a href="{escape(replay_link)}">{escape(replay_path)}</a>' if replay_path else ""
         rows.append(
             "<tr>"
+            f"<td>{escape(str(_scenario_rank(summary, name)))}</td>"
             f"<th scope=\"row\">{escape(name)}</th>"
             f"<td>{escape(str(_scenario_metric(scenario, 'success_rate')))}</td>"
+            f"<td>{escape(str(_scenario_metric(scenario, 'mean_final_distance')))}</td>"
             f"<td>{escape(str(_scenario_metric(scenario, 'collision_rate')))}</td>"
             f"<td>{escape(str(_scenario_metric(scenario, 'unsafe_action_rate')))}</td>"
             f"<td>{escape(str(scenario['gate_status']))}</td>"
+            f"<td>{escape(', '.join(scenario.get('gate_failed_criteria', ())))}</td>"
+            f"<td>{escape(str(scenario.get('gate_explanation', '')))}</td>"
             f"<td>{escape(str(scenario.get('description', '')))}</td>"
             f"<td>{escape(_scenario_limitations(scenario))}</td>"
             f"<td><a href=\"{escape(scorecard_link)}\">{escape(scorecard_path)}</a></td>"
@@ -275,17 +359,22 @@ def write_matrix_report_html(path: Path, summary: Mapping[str, Any], replay_inde
     <dt>run_id</dt><dd><code>{escape(_run_id(summary))}</code></dd>
     <dt>policy path</dt><dd><code>{escape(str(summary["policy_path"]))}</code></dd>
     <dt>scenario count</dt><dd>{escape(str(summary["scenario_count"]))}</dd>
+    <dt>gate profile</dt><dd><code>{escape(str(summary.get("gate_profile", "standard")))}</code></dd>
     <dt>overall gate</dt><dd class="gate-{escape(_overall_gate(summary).lower())}">{escape(_overall_gate(summary))}</dd>
   </dl>
   <h2>Scenarios</h2>
   <table>
     <thead>
       <tr>
+        <th>rank</th>
         <th>scenario</th>
         <th>success_rate</th>
+        <th>mean_final_distance</th>
         <th>collision_rate</th>
         <th>unsafe_action_rate</th>
         <th>gate</th>
+        <th>failed criteria</th>
+        <th>gate explanation</th>
         <th>description</th>
         <th>limitation</th>
         <th>scorecard path</th>

@@ -14,6 +14,7 @@ from stable_baselines3 import PPO
 from kineforge.config import config_path, load_env_configs, load_yaml, project_root
 from kineforge.envs import TabletopReachEnv
 from kineforge.evals import build_scorecard
+from kineforge.gates import DEFAULT_GATE_PROFILE, load_gate_profile
 from kineforge.replay import (
     save_distance_over_time_png,
     save_episode_rewards_png,
@@ -42,6 +43,7 @@ class SweepVariant:
     seed: int
     timesteps: int
     description: str
+    gate_profile: str
     task_overrides: dict[str, Any]
     reward_overrides: dict[str, Any]
 
@@ -50,6 +52,8 @@ class SweepVariant:
 class SweepConfig:
     name: str
     path: Path
+    gate_profile: str
+    description: str
     variants: tuple[SweepVariant, ...]
 
 
@@ -90,17 +94,29 @@ def _validate_variant_name(name: str) -> str:
     return name
 
 
+def list_sweep_presets() -> list[str]:
+    sweep_dir = project_root() / "configs" / "sweeps"
+    return sorted(path.stem for path in sweep_dir.glob("*.yaml") if path.is_file())
+
+
 def load_sweep_config(
     path: str | Path,
     *,
     seed_override: int | None = None,
     timesteps_override: int | None = None,
     episodes_override: int | None = None,
+    gate_override: str | None = None,
 ) -> SweepConfig:
     config_path_value = Path(path)
     payload = load_yaml(config_path_value)
+    if not isinstance(payload, Mapping):
+        raise ValueError("sweep config must be a mapping")
     sweep_name = str(payload.get("name", config_path_value.stem)).strip() or config_path_value.stem
+    sweep_description = str(payload.get("description", ""))
+    sweep_gate_profile = str(gate_override or payload.get("gate_profile", DEFAULT_GATE_PROFILE))
     raw_variants = payload.get("variants", [])
+    if not isinstance(raw_variants, list):
+        raise ValueError("sweep config variants must be a list")
     if len(raw_variants) < 2:
         raise ValueError("sweep config must define at least two variants")
 
@@ -115,6 +131,8 @@ def load_sweep_config(
     variants: list[SweepVariant] = []
     names: list[str] = []
     for raw_variant in raw_variants:
+        if not isinstance(raw_variant, Mapping):
+            raise ValueError("sweep variant entries must be mappings")
         name = _validate_variant_name(str(raw_variant["name"]).strip())
         names.append(name)
         seed_source = seed_override if seed_override is not None else raw_variant.get("seed", default_seed)
@@ -137,13 +155,23 @@ def load_sweep_config(
                 seed=int(seed_source),
                 timesteps=_as_positive_int(timesteps_source, f"variant {name} timesteps"),
                 description=str(raw_variant.get("description", "")),
+                gate_profile=str(gate_override or raw_variant.get("gate_profile", sweep_gate_profile)),
                 task_overrides=dict(raw_variant.get("task_overrides", {})),
                 reward_overrides=dict(raw_variant.get("reward_overrides", {})),
             )
         )
     if len(set(names)) != len(names):
         raise ValueError("sweep config contains duplicate variant names")
-    return SweepConfig(name=sweep_name, path=config_path_value, variants=tuple(variants))
+    load_gate_profile(sweep_gate_profile)
+    for variant in variants:
+        load_gate_profile(variant.gate_profile)
+    return SweepConfig(
+        name=sweep_name,
+        path=config_path_value,
+        gate_profile=sweep_gate_profile,
+        description=sweep_description,
+        variants=tuple(variants),
+    )
 
 
 def _evaluate_policy_with_configs(
@@ -220,6 +248,7 @@ def _evaluate_policy_with_configs(
         failure_modes=active_failures,
         episode_results=episode_results,
         success_threshold=float(task_config["success_threshold"]),
+        gate_profile=variant.gate_profile,
     )
     scorecard["variant"] = variant.name
     env.close()
@@ -269,6 +298,7 @@ def run_sweep_variant(output_dir: Path, sweep_config: SweepConfig, variant: Swee
                 "timesteps": variant.timesteps,
                 "episodes": variant.episodes,
                 "failures": list(variant.failures),
+                "gate_profile": variant.gate_profile,
                 "task_overrides": variant.task_overrides,
                 "reward_overrides": variant.reward_overrides,
             },
@@ -331,6 +361,8 @@ def run_sweep_variant(output_dir: Path, sweep_config: SweepConfig, variant: Swee
             "episodes": variant.episodes,
             "failure_modes": list(variant.failures),
             "gate_thresholds": scorecard["gate"]["thresholds"],
+            "gate_profile": scorecard["gate"]["profile"],
+            "gate_explanation": scorecard["gate"]["explanation"],
             "config_paths": {
                 "sweep": str(sweep_config.path),
                 "robot": str(config_path("robots", variant.robot).relative_to(root)),
@@ -380,6 +412,9 @@ def build_sweep_summary(
             "variant": name,
             "description": variant.description,
             "gate_status": scorecard["gate"]["status"],
+            "gate_profile": scorecard["gate"]["profile"],
+            "gate_failed_criteria": list(scorecard["gate"].get("failed_criteria", ())),
+            "gate_explanation": scorecard["gate"].get("explanation", ""),
             "seed": variant.seed,
             "timesteps": variant.timesteps,
             "episodes": variant.episodes,
@@ -400,6 +435,8 @@ def build_sweep_summary(
         "sweep": sweep_config.name,
         "config_path": str(sweep_config.path),
         "output_dir": str(output_dir),
+        "description": sweep_config.description,
+        "gate_profile": sweep_config.gate_profile,
         "variant_count": len(ranked_rows),
         "gate": {
             "pass_count": sum(1 for row in ranked_rows if row["gate_status"] == "PASS"),
@@ -418,7 +455,9 @@ def write_sweep_summary_csv(path: Path, summary: Mapping[str, Any]) -> None:
         "rank",
         "variant",
         "description",
+        "gate_profile",
         "gate_status",
+        "failed_criteria",
         "success_rate",
         "mean_final_distance",
         "timeout_rate",
@@ -441,6 +480,7 @@ def write_sweep_summary_csv(path: Path, summary: Mapping[str, Any]) -> None:
                 {
                     **{field: row.get(field, "") for field in fieldnames},
                     "run_id": summary["run_id"],
+                    "failed_criteria": ",".join(row.get("gate_failed_criteria", ())),
                     "failures": ",".join(row.get("failures", ())),
                 }
             )
@@ -454,7 +494,10 @@ def write_sweep_report_html(path: Path, summary: Mapping[str, Any]) -> None:
             "<tr>"
             f"<td>{int(row['rank'])}</td>"
             f"<td>{html.escape(str(row['variant']))}</td>"
+            f"<td>{html.escape(str(row['gate_profile']))}</td>"
             f"<td>{html.escape(str(row['gate_status']))}</td>"
+            f"<td>{html.escape(', '.join(row.get('gate_failed_criteria', ())))}</td>"
+            f"<td>{html.escape(str(row.get('gate_explanation', '')))}</td>"
             f"<td>{float(row['success_rate']):.3f}</td>"
             f"<td>{float(row['mean_final_distance']):.4f}</td>"
             f"<td>{float(row['timeout_rate']):.3f}</td>"
@@ -480,11 +523,12 @@ def write_sweep_report_html(path: Path, summary: Mapping[str, Any]) -> None:
 <body>
   <h1>kineForge config sweep</h1>
   <p><strong>Run:</strong> <code>{html.escape(str(summary['run_id']))}</code></p>
+  <p><strong>Gate profile:</strong> <code>{html.escape(str(summary['gate_profile']))}</code></p>
   <p><strong>Ranking:</strong> gate status, success rate descending, mean final distance ascending.</p>
   <p><strong>Variants:</strong> {int(summary['variant_count'])}; PASS {int(summary['gate']['pass_count'])}, FAIL {int(summary['gate']['fail_count'])}</p>
   <table>
     <thead>
-      <tr><th>Rank</th><th>Variant</th><th>Gate</th><th>Success rate</th><th>Mean final distance</th><th>Timeout rate</th><th>Seed</th><th>Timesteps</th><th>Failures</th><th>Scorecard</th></tr>
+      <tr><th>Rank</th><th>Variant</th><th>Gate profile</th><th>Gate</th><th>Failed criteria</th><th>Gate explanation</th><th>Success rate</th><th>Mean final distance</th><th>Timeout rate</th><th>Seed</th><th>Timesteps</th><th>Failures</th><th>Scorecard</th></tr>
     </thead>
     <tbody>
       {''.join(rows)}

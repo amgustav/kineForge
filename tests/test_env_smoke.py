@@ -10,12 +10,16 @@ import pytest
 
 from kineforge.config import load_env_configs, load_yaml
 from kineforge.evals import build_scorecard
+from kineforge.gates import load_gate_profile, list_gate_profiles
 from kineforge.matrix import (
     build_matrix_summary,
     build_replay_index,
     compare_summaries,
     load_default_scenarios,
+    list_matrix_presets,
+    load_matrix_preset,
     parse_scenarios,
+    rank_scenario_rows,
     write_matrix_report_html,
     write_matrix_summary_csv,
 )
@@ -25,6 +29,7 @@ from kineforge.sweeps import (
     build_sweep_summary,
     load_sweep_config,
     merge_config,
+    list_sweep_presets,
     rank_variant_rows,
 )
 from kineforge.envs import TabletopReachEnv
@@ -159,6 +164,10 @@ def test_cli_seed_arguments_are_parsed(monkeypatch):
     eval_args = eval_cli.parse_args()
     assert eval_args.seed == 1
     assert eval_cli.parse_failures(eval_args.failures) == {"moved_target", "noisy_observation"}
+    assert eval_args.gate == "standard"
+
+    monkeypatch.setattr(sys, "argv", ["eval.py", "--list-gates"])
+    assert eval_cli.parse_args().list_gates is True
 
 
 def test_eval_matrix_scenario_parser_supports_named_failure_sets():
@@ -191,9 +200,23 @@ def test_eval_matrix_scenario_parser_supports_named_failure_sets():
     with pytest.raises(ValueError, match="duplicate scenario names"):
         parse_scenarios(["baseline=", "baseline=moved_target"])
 
+    preset = load_matrix_preset("default")
+    assert preset.gate_profile == "standard"
+    assert "default" in list_matrix_presets()
+
+    ranked = rank_scenario_rows(
+        [
+            {"scenario": "fail", "gate_status": "FAIL", "success_rate": 1.0, "mean_final_distance": 0.01},
+            {"scenario": "pass_far", "gate_status": "PASS", "success_rate": 0.8, "mean_final_distance": 0.04},
+            {"scenario": "pass_near", "gate_status": "PASS", "success_rate": 0.8, "mean_final_distance": 0.03},
+        ]
+    )
+    assert [row["scenario"] for row in ranked] == ["pass_near", "pass_far", "fail"]
+    assert [row["rank"] for row in ranked] == [1, 2, 3]
 
 
-def test_sweep_config_loading_resolves_variants_and_overrides():
+
+def test_sweep_config_loading_resolves_variants_and_overrides(tmp_path):
     sweep_config = load_sweep_config("configs/sweeps/default.yaml", seed_override=7, timesteps_override=11)
 
     assert sweep_config.name == "default"
@@ -210,6 +233,22 @@ def test_sweep_config_loading_resolves_variants_and_overrides():
     merged_reward = merge_config({"weights": {"distance": 2.0, "progress": 10.0}}, distance_heavy.reward_overrides)
     assert merged_reward["weights"]["distance"] == 2.5
     assert merged_reward["weights"]["progress"] == 10.0
+    assert sweep_config.gate_profile == "standard"
+    assert all(variant.gate_profile == "standard" for variant in sweep_config.variants)
+    assert "default" in list_sweep_presets()
+    strict_sweep = load_sweep_config("configs/sweeps/default.yaml", gate_override="strict", seed_override=7, timesteps_override=11)
+    assert strict_sweep.gate_profile == "strict"
+    assert all(variant.gate_profile == "strict" for variant in strict_sweep.variants)
+
+    malformed_sweep = tmp_path / "malformed_sweep.yaml"
+    malformed_sweep.write_text("name: bad\nvariants: {}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="variants must be a list"):
+        load_sweep_config(malformed_sweep)
+
+    malformed_variant = tmp_path / "malformed_variant.yaml"
+    malformed_variant.write_text("name: bad\nseed: 1\ntimesteps: 1\nvariants:\n  - not-a-mapping\n  - name: ok\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="variant entries must be mappings"):
+        load_sweep_config(malformed_variant)
 
 
 def test_sweep_summary_ranking_prefers_pass_success_then_distance(tmp_path):
@@ -260,6 +299,7 @@ def test_sweep_summary_ranking_prefers_pass_success_then_distance(tmp_path):
             seed=1,
             timesteps=10,
             description="",
+            gate_profile="standard",
             task_overrides={},
             reward_overrides={},
         ),
@@ -274,18 +314,19 @@ def test_sweep_summary_ranking_prefers_pass_success_then_distance(tmp_path):
             timesteps=10,
             description="",
             task_overrides={},
+            gate_profile="standard",
             reward_overrides={},
         ),
     }
     summary = build_sweep_summary(
-        sweep_config=SweepConfig("unit", tmp_path / "sweep.yaml", tuple(variants.values())),
+        sweep_config=SweepConfig("unit", tmp_path / "sweep.yaml", "standard", "", tuple(variants.values())),
         output_dir=tmp_path,
         run_timestamp="20260626-000000",
         variant_results={
             "pass_best_success": {
                 "variant": variants["pass_best_success"],
                 "scorecard": {
-                    "gate": {"status": "PASS"},
+                    "gate": {"status": "PASS", "profile": "standard", "failed_criteria": [], "explanation": "PASS"},
                     "summary": {
                         "success_rate": 1.0,
                         "mean_final_distance": 0.05,
@@ -301,7 +342,7 @@ def test_sweep_summary_ranking_prefers_pass_success_then_distance(tmp_path):
             "fail_high_success": {
                 "variant": variants["fail_high_success"],
                 "scorecard": {
-                    "gate": {"status": "FAIL"},
+                    "gate": {"status": "FAIL", "profile": "standard", "failed_criteria": ["success_rate"], "explanation": "FAIL"},
                     "summary": {
                         "success_rate": 1.0,
                         "mean_final_distance": 0.01,
@@ -473,6 +514,22 @@ def test_scorecard_structure_includes_gate_thresholds_and_episode_results():
         "max_mean_final_distance": 0.05,
         "max_timeout_rate": 0.3,
     }
+    assert scorecard["gate"]["profile"] == "standard"
+    assert "standard" in list_gate_profiles()
+    strict_scorecard = build_scorecard(
+        Path("runs/eval-test/policy.zip"),
+        "arm_v0",
+        "tabletop_reach",
+        "reach_v0",
+        seed=1,
+        failure_modes={"moved_target"},
+        episode_results=episode_results,
+        success_threshold=0.05,
+        gate_profile=load_gate_profile("strict"),
+    )
+    assert strict_scorecard["gate"]["profile"] == "strict"
+    assert strict_scorecard["gate"]["thresholds"]["min_success_rate"] == 0.95
+    assert "success_rate" in strict_scorecard["gate"]["failed_criteria"]
     assert len(scorecard["per_episode"]) == 2
     assert scorecard["failure_modes"] == ["moved_target"]
     assert "collision_rate_explanation" in scorecard

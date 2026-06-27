@@ -8,6 +8,7 @@ import numpy as np
 from stable_baselines3 import PPO
 
 from kineforge.config import load_env_configs
+from kineforge.gates import DEFAULT_GATE_PROFILE, GateProfile, build_gate_result, load_gate_profile
 from kineforge.envs import TabletopReachEnv
 
 
@@ -20,6 +21,7 @@ def build_scorecard(
     failure_modes: Collection[str],
     episode_results: list[dict[str, Any]],
     success_threshold: float,
+    gate_profile: GateProfile | str | None = None,
 ) -> dict[str, Any]:
     success_rate = float(np.mean([bool(result["success"]) for result in episode_results]))
     mean_final_distance = float(np.mean([float(result["final_distance"]) for result in episode_results]))
@@ -27,32 +29,19 @@ def build_scorecard(
     mean_episode_reward = float(np.mean([float(result["episode_reward"]) for result in episode_results]))
     collision_rate = 0.0
 
-    thresholds = {
-        "min_success_rate": 0.8,
-        "max_mean_final_distance": float(success_threshold),
-        "max_timeout_rate": 0.3,
-    }
-    criteria = {
-        "success_rate": {
-            "operator": ">=",
-            "threshold": thresholds["min_success_rate"],
-            "value": success_rate,
-            "passed": bool(success_rate >= thresholds["min_success_rate"]),
-        },
-        "mean_final_distance": {
-            "operator": "<=",
-            "threshold": thresholds["max_mean_final_distance"],
-            "value": mean_final_distance,
-            "passed": bool(mean_final_distance <= thresholds["max_mean_final_distance"]),
-        },
-        "timeout_rate": {
-            "operator": "<=",
-            "threshold": thresholds["max_timeout_rate"],
-            "value": timeout_rate,
-            "passed": bool(timeout_rate <= thresholds["max_timeout_rate"]),
-        },
-    }
-    failed_criteria = [name for name, criterion in criteria.items() if not criterion["passed"]]
+    if gate_profile is None:
+        profile = load_gate_profile(DEFAULT_GATE_PROFILE)
+    elif isinstance(gate_profile, str):
+        profile = load_gate_profile(gate_profile)
+    else:
+        profile = gate_profile
+    gate = build_gate_result(
+        profile=profile,
+        success_threshold=success_threshold,
+        success_rate=success_rate,
+        mean_final_distance=mean_final_distance,
+        timeout_rate=timeout_rate,
+    )
 
     return {
         "policy_path": str(policy_path),
@@ -69,12 +58,7 @@ def build_scorecard(
             "mean_episode_reward": mean_episode_reward,
             "collision_rate": collision_rate,
         },
-        "gate": {
-            "status": "PASS" if not failed_criteria else "FAIL",
-            "thresholds": thresholds,
-            "criteria": criteria,
-            "failed_criteria": failed_criteria,
-        },
+        "gate": gate,
         "per_episode": episode_results,
         "collision_rate_explanation": (
             "Collision detection is not implemented in v0.2.0; collision_rate is reported as 0.0 "
@@ -91,6 +75,7 @@ def run_evaluation(
     failures: Collection[str],
     episodes: int,
     seed: int,
+    gate_profile: GateProfile | str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if episodes < 1:
         raise ValueError("episodes must be at least 1")
@@ -172,6 +157,7 @@ def run_evaluation(
         failure_modes=active_failures,
         episode_results=episode_results,
         success_threshold=success_threshold,
+        gate_profile=gate_profile,
     )
     env.close()
     assert first_episode_replay is not None

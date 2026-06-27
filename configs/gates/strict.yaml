@@ -1,0 +1,6 @@
+name: strict
+description: Stricter experiment gate for comparing stronger policies.
+thresholds:
+  min_success_rate: 0.95
+  max_mean_final_distance: 0.04
+  max_timeout_rate: 0.1

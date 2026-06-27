@@ -1,9 +1,9 @@
 # kineForge Roadmap
 
 Last updated: 2026-06-27
-Current baseline: v0.4.0
+Current baseline: v0.5.0
 
-This roadmap defines the intended direction of kineForge from v0.4.0 to v1.0.0.
+This roadmap defines the intended direction of kineForge from v0.5.0 to v1.0.0.
 
 It is an outcome roadmap, not a step-by-step implementation script.
 
@@ -13,23 +13,24 @@ Agents should use this file together with:
 - `PROJECT_DOCTRINE.md`
 - `README.md`
 
-## Current State: v0.4.0
+## Current State: v0.5.0
 
 kineForge currently provides:
 
 - MuJoCo tabletop reach environment
 - PPO training via Stable-Baselines3
 - Gymnasium environment interface
-- YAML configs for robot, task, reward, failures, randomization, and sweeps
+- YAML configs for robot, task, reward, failures, gates, randomization, matrix presets, and sweep presets
+- named gate profiles
 - deterministic evaluation
-- JSON scorecards
+- JSON scorecards with gate explanations
 - timestamped run directories
-- eval matrices
-- static HTML and CSV matrix reports
+- configurable eval matrix presets
+- configurable config sweep presets
+- ranked matrix and sweep summaries
+- static HTML and CSV matrix/sweep reports
 - replay indexes
 - matrix summary comparison
-- config sweep runner
-- sweep summaries, reports, and CSV outputs
 - test coverage for core behavior
 
 Current public positioning:
@@ -363,17 +364,10 @@ When an agent is asked to work autonomously toward a target version:
 
 ## Immediate Next Step
 
-The next immediate repository task after v0.4.0 is:
+The next immediate repository task after v0.5.0 is:
 
 ```text
-v0.4.x documentation source-of-truth
+v0.6.0 contact, collision, and safety-relevant metrics
 ```
 
-This means adding:
-
-- `PROJECT_DOCTRINE.md`
-- `ROADMAP.md`
-- references in `AGENTS.md`
-- references in `README.md`
-
-After that, the project can safely begin autonomous work toward v0.5.0.
+This means replacing placeholder collision/contact values with honest contact-aware metrics where the current MuJoCo environment supports them.

@@ -24,6 +24,7 @@ def write_eval_artifacts(
     episodes: int,
     seed: int,
     run_timestamp: str,
+    gate_profile: str = "standard",
 ) -> dict[str, Any]:
     active_failures = set(failures)
     scorecard, replay_payload = run_evaluation(
@@ -34,6 +35,7 @@ def write_eval_artifacts(
         active_failures,
         episodes,
         seed,
+        gate_profile,
     )
     robot_config, task_config, reward_config, failure_config = load_env_configs(
         robot,
@@ -45,6 +47,7 @@ def write_eval_artifacts(
         "robot": robot_config,
         "task": task_config,
         "reward": reward_config,
+        "gate_profile": gate_profile,
     }
     if active_failures:
         configs["failures"] = failure_config
@@ -98,6 +101,8 @@ def write_eval_artifacts(
             "failure_modes": sorted(active_failures),
             "episodes": episodes,
             "gate_thresholds": scorecard["gate"]["thresholds"],
+            "gate_profile": scorecard["gate"]["profile"],
+            "gate_explanation": scorecard["gate"]["explanation"],
             "config_paths": config_paths,
             "config_snapshot_path": str(config_snapshot_path),
             "artifacts": artifacts,

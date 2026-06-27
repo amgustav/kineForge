@@ -1,0 +1,6 @@
+name: smoke
+description: Permissive gate for CLI smoke runs and artifact verification.
+thresholds:
+  min_success_rate: 0.0
+  max_mean_final_distance: 1.0
+  max_timeout_rate: 1.0

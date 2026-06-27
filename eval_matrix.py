@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from kineforge.gates import list_gate_profiles
 from kineforge.eval_artifacts import write_eval_artifacts
 from kineforge.matrix import (
     build_matrix_summary,
     build_replay_index,
+    list_matrix_presets,
+    load_matrix_preset,
     parse_scenarios,
     write_matrix_report_html,
     write_matrix_summary_csv,
@@ -17,6 +20,9 @@ from kineforge.reports import copy_file, prepare_run_dir, timestamp, write_json
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one kineForge policy across a named eval matrix.")
     parser.add_argument("--policy", default="runs/latest/policy.zip")
+    parser.add_argument("--preset", default="default", help="Matrix preset name from configs/eval_matrices.")
+    parser.add_argument("--gate", default=None, help="Gate profile name from configs/gates.")
+    parser.add_argument("--list-presets", action="store_true", help="List matrix and gate presets, then exit.")
     parser.add_argument(
         "--scenario",
         action="append",
@@ -32,7 +38,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    scenarios = parse_scenarios(args.scenario)
+    if args.list_presets:
+        print("Matrix presets:")
+        for preset in list_matrix_presets():
+            print(f"  {preset}")
+        print("Gate profiles:")
+        for profile in list_gate_profiles():
+            print(f"  {profile}")
+        return
+    matrix_preset = load_matrix_preset(args.preset)
+    gate_profile = args.gate or matrix_preset.gate_profile
+    scenarios = parse_scenarios(args.scenario, preset_name=args.preset)
     run_timestamp = timestamp()
     matrix_dir = prepare_run_dir("eval-matrix", run_timestamp)
 
@@ -58,6 +74,7 @@ def main() -> None:
             episodes=args.episodes,
             seed=args.seed,
             run_timestamp=run_timestamp,
+            gate_profile=gate_profile,
         )
         result["scenario"] = scenario
         scenario_results[scenario.name] = result
@@ -75,6 +92,8 @@ def main() -> None:
         episodes=args.episodes,
         run_timestamp=run_timestamp,
         scenario_results=scenario_results,
+        matrix_preset=matrix_preset.name,
+        gate_profile=gate_profile,
     )
     replay_index = build_replay_index(scenario_results)
     write_json(summary_path, summary)
@@ -83,6 +102,8 @@ def main() -> None:
     write_matrix_summary_csv(csv_path, summary, replay_index)
 
     print(f"Matrix dir: {matrix_dir}")
+    print(f"Preset: {matrix_preset.name}")
+    print(f"Gate profile: {gate_profile}")
     print(f"Summary JSON: {summary_path}")
     print(f"Replay index JSON: {replay_index_path}")
     print(f"HTML report: {report_path}")

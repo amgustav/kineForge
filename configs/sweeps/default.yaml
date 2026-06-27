@@ -1,4 +1,6 @@
 name: default
+description: Default reward-weight sweep for tabletop reach.
+gate_profile: standard
 robot: arm_v0
 task: tabletop_reach
 reward: reach_v0
