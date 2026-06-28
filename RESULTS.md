@@ -1,6 +1,6 @@
 # kineForge Results
 
-This file records the current public proof object for kineForge: a reproducible evaluation matrix for one trained tabletop reach policy.
+This file documents a reproducible evaluation matrix for one trained tabletop reach policy.
 
 ## v0.6.0 Reproducible Results Capsule
 
